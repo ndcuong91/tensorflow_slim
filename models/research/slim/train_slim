@@ -1,0 +1,2 @@
+python3 train_image_classifier.py --max_number_of_steps=500000 --quantize_delay=-1
+python3 train_image_classifier.py --max_number_of_steps=500000 --checkpoint_path='' --quantize_delay=200000
