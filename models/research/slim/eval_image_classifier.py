@@ -28,7 +28,7 @@ from preprocessing import preprocessing_factory
 slim = tf.contrib.slim
 
 CHECKPOINT_DIR='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs'
-CHECKPOINT= os.path.join(CHECKPOINT_DIR,'mobilenet_v1_224_getty_dataset_02/2019-08-22_23.02/model.ckpt-299867')
+CHECKPOINT= os.path.join(CHECKPOINT_DIR,'mobilenet_v1_224_getty_dataset_02/2019-08-23_11.15/model.ckpt-46104')
 DATASET_NAME='getty_dataset_02'
 DATASET_DIR='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/datasets/'+DATASET_NAME
 DATASET_SPLIT='test'

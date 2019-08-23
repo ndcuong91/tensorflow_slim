@@ -40,22 +40,23 @@ MODEL_NAME='mobilenet_v1' #inception_v3  #mobilenet_v1
 NUM_THREAD=8
 input_size=224
 save_ckpt_every_seconds=300
-log_every_n_steps=100
+log_every_n_steps=50
 MAXIMUM_STEPS=600000
 quant_delay=10000
+resume_dir=''
 
 CHECKPOINT=''
-CHECKPOINT_EXCLUDE=None
-TRAINABLE_SCOPE=None
-if(finetune):
+CHECKPOINT_EXCLUDE=''
+TRAINABLE_SCOPE=''
+if(finetune and quant_delay==-1):
     if(MODEL_NAME=='inception_v3'):
         CHECKPOINT='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/inception_v3/inception_v3.ckpt'
         CHECKPOINT_EXCLUDE='InceptionV3/Logits,InceptionV3/AuxLogits' #MobilenetV1
         TRAINABLE_SCOPE='InceptionV3/Logits,InceptionV3/AuxLogits'
     if(MODEL_NAME=='mobilenet_v1'):
-        #CHECKPOINT='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/mobilenet_v1/mobilenet_v1_1.0_224.ckpt'
+        CHECKPOINT='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/mobilenet_v1/mobilenet_v1_1.0_224.ckpt'
         CHECKPOINT_EXCLUDE='MobilenetV1/Logits' #MobilenetV1
-        TRAINABLE_SCOPE='MobilenetV1/Logits'
+        #TRAINABLE_SCOPE='MobilenetV1/Logits'
 
 
 tf.app.flags.DEFINE_string(
@@ -378,7 +379,7 @@ def _get_init_fn():
     return None
 
   exclusions = []
-  if FLAGS.checkpoint_exclude_scopes:
+  if FLAGS.checkpoint_exclude_scopes !='':
     exclusions = [scope.strip()
                   for scope in FLAGS.checkpoint_exclude_scopes.split(',')]
 
@@ -410,7 +411,7 @@ def _get_variables_to_train():
   Returns:
     A list of variables to train by the optimizer.
   """
-  if FLAGS.trainable_scopes is None:
+  if FLAGS.trainable_scopes =='':
     return tf.trainable_variables()
   else:
     scopes = [scope.strip() for scope in FLAGS.trainable_scopes.split(',')]
@@ -547,6 +548,7 @@ def main(_):
       moving_average_variables, variable_averages = None, None
 
     if FLAGS.quantize_delay >= 0:
+      print('Train with quantization-aware training')
       tf.contrib.quantize.create_training_graph(
           quant_delay=FLAGS.quantize_delay)
 
@@ -605,7 +607,11 @@ def main(_):
     folder = FLAGS.model_name+'_'+str(train_image_size)+'_' + FLAGS.dataset_name
     date_time = datetime.now().strftime('%Y-%m-%d_%H.%M')
     log_dir=os.path.join(FLAGS.train_dir,folder,date_time)
-    create_dir(log_dir)
+
+    if(resume_dir==''):
+        create_dir(log_dir)
+    else:
+        log_dir=resume_dir
     slim.learning.train(
         train_tensor,
         logdir=log_dir,
