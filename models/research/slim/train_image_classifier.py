@@ -27,37 +27,29 @@ from preprocessing import preprocessing_factory
 import os
 from datetime import datetime
 from utils_image_classifier import create_dir
+import config_image_classifier as config
 
 slim = tf.contrib.slim
 
 finetune=True
 
-DATASET_NAME='getty_dataset_02'
-DATASET_DIR='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/datasets/'+DATASET_NAME
-TRAIN_DIR='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs'
+DATASET_NAME=config.DATASET_NAME
+DATASET_DIR=config.DATASET_DIR
 DATASET_SPLIT='train'
-MODEL_NAME='mobilenet_v1' #inception_v3  #mobilenet_v1
-NUM_THREAD=8
-input_size=224
-save_ckpt_every_seconds=300
-log_every_n_steps=50
-MAXIMUM_STEPS=600000
-quant_delay=10000
-resume_dir=''
+MODEL_NAME=config.MODEL_NAME
+TRAIN_DIR=config.PROJ_DIR+ '/train_logs'
+NUM_THREAD=config.NUM_THREAD
+input_size=config.input_size
+save_ckpt_every_seconds=config.save_ckpt_every_seconds
+log_every_n_steps=config.log_every_n_steps
+MAXIMUM_STEPS=config.MAXIMUM_STEPS
+quant_delay=config.quant_delay
+resume_dir=config.resume_dir
+batch_size=config.batch_size
 
-CHECKPOINT=''
-CHECKPOINT_EXCLUDE=''
-TRAINABLE_SCOPE=''
-if(finetune and quant_delay==-1):
-    if(MODEL_NAME=='inception_v3'):
-        CHECKPOINT='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/inception_v3/inception_v3.ckpt'
-        CHECKPOINT_EXCLUDE='InceptionV3/Logits,InceptionV3/AuxLogits' #MobilenetV1
-        TRAINABLE_SCOPE='InceptionV3/Logits,InceptionV3/AuxLogits'
-    if(MODEL_NAME=='mobilenet_v1'):
-        CHECKPOINT='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/mobilenet_v1/mobilenet_v1_1.0_224.ckpt'
-        CHECKPOINT_EXCLUDE='MobilenetV1/Logits' #MobilenetV1
-        #TRAINABLE_SCOPE='MobilenetV1/Logits'
-
+CHECKPOINT=config.CHECKPOINT
+CHECKPOINT_EXCLUDE=config.CHECKPOINT_EXCLUDE
+TRAINABLE_SCOPE=config.TRAINABLE_SCOPE
 
 tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
@@ -230,7 +222,7 @@ tf.app.flags.DEFINE_string(
     'as `None`, then the model_name flag is used.')
 
 tf.app.flags.DEFINE_integer(
-    'batch_size', 32, 'The number of samples in each batch.')
+    'batch_size', batch_size, 'The number of samples in each batch.')
 
 tf.app.flags.DEFINE_integer(
     'train_image_size', input_size, 'Train image size')

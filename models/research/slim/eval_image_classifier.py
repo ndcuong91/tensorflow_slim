@@ -24,20 +24,23 @@ import tensorflow as tf
 from datasets import dataset_factory
 from nets import nets_factory
 from preprocessing import preprocessing_factory
+import config_image_classifier as config
 
 slim = tf.contrib.slim
 
-CHECKPOINT_DIR='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs'
-CHECKPOINT= os.path.join(CHECKPOINT_DIR,'mobilenet_v1_224_getty_dataset_02/2019-08-23_11.15/model.ckpt-46104')
-DATASET_NAME='getty_dataset_02'
-DATASET_DIR='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/datasets/'+DATASET_NAME
+TRAIN_DIR=config.PROJ_DIR+ '/train_logs'
+CHECKPOINT= os.path.join(TRAIN_DIR,'mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14')
+DATASET_NAME=config.DATASET_NAME
+DATASET_DIR=config.DATASET_DIR
 DATASET_SPLIT='test'
-MODEL_NAME='mobilenet_v1'
-input_size=224
+MODEL_NAME=config.MODEL_NAME
+input_size=config.input_size
+batch_size=config.batch_size
+NUM_THREAD=config.NUM_THREAD
 
 
 tf.app.flags.DEFINE_integer(
-    'batch_size', 100, 'The number of samples in each batch.')
+    'batch_size', batch_size, 'The number of samples in each batch.')
 
 tf.app.flags.DEFINE_integer(
     'max_num_batches', None,
@@ -55,7 +58,7 @@ tf.app.flags.DEFINE_string(
     'eval_dir', CHECKPOINT, 'Directory where the results are saved to.')
 
 tf.app.flags.DEFINE_integer(
-    'num_preprocessing_threads', 4,
+    'num_preprocessing_threads', NUM_THREAD,
     'The number of threads used to create the batches.')
 
 tf.app.flags.DEFINE_string(

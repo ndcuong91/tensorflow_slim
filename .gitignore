@@ -1,6 +1,6 @@
 # dataset
 *.tfrecord
-datasets/
+data/
 train_logs/
 *.tar.gz
 *.pb
