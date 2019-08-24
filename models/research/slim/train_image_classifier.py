@@ -13,11 +13,16 @@
 # limitations under the License.
 # ==============================================================================
 """Generic training script that trains a model using a given dataset."""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#0 = all messages are logged (default behavior)
+#1 = INFO messages are not printed
+#2 = INFO and WARNING messages are not printed
+#3 = INFO, WARNING, and ERROR messages are not printed
 import tensorflow as tf
 
 from datasets import dataset_factory
@@ -50,6 +55,7 @@ batch_size=config.batch_size
 CHECKPOINT=config.CHECKPOINT
 CHECKPOINT_EXCLUDE=config.CHECKPOINT_EXCLUDE
 TRAINABLE_SCOPE=config.TRAINABLE_SCOPE
+log_dir=''
 
 tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
@@ -364,10 +370,17 @@ def _get_init_fn():
 
   # Warn the user if a checkpoint exists in the train_dir. Then we'll be
   # ignoring the checkpoint anyway.
-  if tf.train.latest_checkpoint(FLAGS.train_dir):
-    tf.logging.info(
-        'Ignoring --checkpoint_path because a checkpoint already exists in %s'
-        % FLAGS.train_dir)
+
+  folder = FLAGS.model_name + '_' + str(FLAGS.train_image_size) + '_' + FLAGS.dataset_name
+  date_time = datetime.now().strftime('%Y-%m-%d_%H.%M')
+  log_dir = os.path.join(FLAGS.train_dir, folder, date_time)
+
+  if (resume_dir == ''):
+    create_dir(log_dir)
+  else:
+    log_dir = resume_dir
+  if tf.train.latest_checkpoint(log_dir):
+    tf.logging.info( 'Ignoring --checkpoint_path because a checkpoint already exists in %s'% log_dir)
     return None
 
   exclusions = []
@@ -419,7 +432,7 @@ def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.logging.set_verbosity(tf.logging.INFO)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
   with tf.Graph().as_default():
     #######################
     # Config model_deploy #
@@ -471,7 +484,6 @@ def main(_):
       label -= FLAGS.labels_offset
 
       train_image_size = FLAGS.train_image_size or network_fn.default_image_size
-
       image = image_preprocessing_fn(image, train_image_size, train_image_size)
 
       images, labels = tf.train.batch(
@@ -596,14 +608,14 @@ def main(_):
     ###########################
     # Kicks off the training. #
     ###########################
-    folder = FLAGS.model_name+'_'+str(train_image_size)+'_' + FLAGS.dataset_name
+    folder = FLAGS.model_name + '_' + str(FLAGS.train_image_size) + '_' + FLAGS.dataset_name
     date_time = datetime.now().strftime('%Y-%m-%d_%H.%M')
-    log_dir=os.path.join(FLAGS.train_dir,folder,date_time)
+    log_dir = os.path.join(FLAGS.train_dir, folder, date_time)
 
-    if(resume_dir==''):
+    if (resume_dir == ''):
         create_dir(log_dir)
     else:
-        log_dir=resume_dir
+        log_dir = resume_dir
     slim.learning.train(
         train_tensor,
         logdir=log_dir,

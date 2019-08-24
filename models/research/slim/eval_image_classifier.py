@@ -29,7 +29,7 @@ import config_image_classifier as config
 slim = tf.contrib.slim
 
 TRAIN_DIR=config.PROJ_DIR+ '/train_logs'
-CHECKPOINT= os.path.join(TRAIN_DIR,'mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14')
+CHECKPOINT= config.resume_dir
 DATASET_NAME=config.DATASET_NAME
 DATASET_DIR=config.DATASET_DIR
 DATASET_SPLIT='test'
@@ -101,7 +101,7 @@ def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.logging.set_verbosity(tf.logging.INFO)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
   with tf.Graph().as_default():
     tf_global_step = slim.get_or_create_global_step()
 
@@ -196,13 +196,26 @@ def main(_):
 
     tf.logging.info('Evaluating %s' % checkpoint_path)
 
+    conf = tf.ConfigProto(device_count={'GPU': 0})  #
     slim.evaluation.evaluate_once(
         master=FLAGS.master,
         checkpoint_path=checkpoint_path,
         logdir=FLAGS.eval_dir,
         num_evals=num_batches,
         eval_op=list(names_to_updates.values()),
-        variables_to_restore=variables_to_restore)
+        variables_to_restore=variables_to_restore,
+        session_config=conf)
+
+    # eval_interval_secs = config.save_ckpt_every_seconds  # How often to run the evaluation.
+    # slim.evaluation.evaluation_loop(
+    #     'local',
+    #     checkpoint_dir=checkpoint_path,
+    #     logdir=FLAGS.eval_dir,
+    #     num_evals=num_batches,
+    #     eval_op=list(names_to_updates.values()),
+    #     variables_to_restore=variables_to_restore,
+    #     session_config=conf,
+    #     eval_interval_secs=eval_interval_secs)
 
 
 if __name__ == '__main__':
