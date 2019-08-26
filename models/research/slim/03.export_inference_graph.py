@@ -62,19 +62,31 @@ import tensorflow as tf
 from tensorflow.python.platform import gfile
 from datasets import dataset_factory
 from nets import nets_factory
+import config_image_classifier as config
 
+
+MODEL_NAME=config.MODEL_NAME
+input_size=config.input_size
+quant_delay=config.quant_delay
+DATASET_NAME=config.DATASET_NAME
+DATASET_DIR=config.DATASET_DIR
+quantize=False
+if(quant_delay>-1):
+    quantize=True
+output_file=config.output_graph
+write_text_graphdef=True #use True to fix bug in freeze_graph.py
 
 slim = tf.contrib.slim
 
 tf.app.flags.DEFINE_string(
-    'model_name', 'inception_v3', 'The name of the architecture to save.')
+    'model_name', MODEL_NAME, 'The name of the architecture to save.')
 
 tf.app.flags.DEFINE_boolean(
     'is_training', False,
     'Whether to save out a training-focused version of the model.')
 
 tf.app.flags.DEFINE_integer(
-    'image_size', None,
+    'image_size', input_size,
     'The image size to use, otherwise use the model default_image_size.')
 
 tf.app.flags.DEFINE_integer(
@@ -82,7 +94,7 @@ tf.app.flags.DEFINE_integer(
     'Batch size for the exported model. Defaulted to "None" so batch size can '
     'be specified at model runtime.')
 
-tf.app.flags.DEFINE_string('dataset_name', 'imagenet',
+tf.app.flags.DEFINE_string('dataset_name', DATASET_NAME,
                            'The name of the dataset to use with the model.')
 
 tf.app.flags.DEFINE_integer(
@@ -92,13 +104,13 @@ tf.app.flags.DEFINE_integer(
     'class for the ImageNet dataset.')
 
 tf.app.flags.DEFINE_string(
-    'output_file', '', 'Where to save the resulting file to.')
+    'output_file', output_file, 'Where to save the resulting file to.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_dir', '', 'Directory to save intermediate dataset files to')
+    'dataset_dir', DATASET_DIR, 'Directory to save intermediate dataset files to')
 
 tf.app.flags.DEFINE_bool(
-    'quantize', False, 'whether to use quantized graph or not.')
+    'quantize', quantize, 'whether to use quantized graph or not.')
 
 tf.app.flags.DEFINE_bool(
     'is_video_model', False, 'whether to use 5-D inputs for video model.')
@@ -107,7 +119,7 @@ tf.app.flags.DEFINE_integer(
     'num_frames', None,
     'The number of frames to use. Only used if is_video_model is True.')
 
-tf.app.flags.DEFINE_bool('write_text_graphdef', False,
+tf.app.flags.DEFINE_bool('write_text_graphdef', write_text_graphdef,
                          'Whether to write a text version of graphdef.')
 
 FLAGS = tf.app.flags.FLAGS
@@ -154,3 +166,4 @@ def main(_):
 
 if __name__ == '__main__':
   tf.app.run()
+  print ('Finish export inference graph!')

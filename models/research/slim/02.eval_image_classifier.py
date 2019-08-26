@@ -37,6 +37,10 @@ MODEL_NAME=config.MODEL_NAME
 input_size=config.input_size
 batch_size=config.batch_size
 NUM_THREAD=config.NUM_THREAD
+quant_delay=config.quant_delay
+quantize=False
+if(quant_delay>-1):
+    quantize=True
 
 
 tf.app.flags.DEFINE_integer(

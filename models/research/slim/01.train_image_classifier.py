@@ -51,6 +51,7 @@ MAXIMUM_STEPS=config.MAXIMUM_STEPS
 quant_delay=config.quant_delay
 resume_dir=config.resume_dir
 batch_size=config.batch_size
+quantize=config.quantize
 
 CHECKPOINT=config.CHECKPOINT
 CHECKPOINT_EXCLUDE=config.CHECKPOINT_EXCLUDE
