@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/atsg/PycharmProjects/gvh205_Lattice_BNN/Lattice_BNN/KeyPhrase_Package/seven/training/checkpoint/binary3a_conv.ckpt-3500"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_Lattice_BNN/Lattice_BNN/KeyPhrase_Package/seven/training/checkpoint/binary3a_conv.ckpt-3100"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_Lattice_BNN/Lattice_BNN/KeyPhrase_Package/seven/training/checkpoint/binary3a_conv.ckpt-3200"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_Lattice_BNN/Lattice_BNN/KeyPhrase_Package/seven/training/checkpoint/binary3a_conv.ckpt-3300"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_Lattice_BNN/Lattice_BNN/KeyPhrase_Package/seven/training/checkpoint/binary3a_conv.ckpt-3400"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_Lattice_BNN/Lattice_BNN/KeyPhrase_Package/seven/training/checkpoint/binary3a_conv.ckpt-3500"

@@ -31,7 +31,7 @@ slim = tf.contrib.slim
 
 _FILE_PATTERN = 'getty_dataset_02_%s_*.tfrecord'
 
-SPLITS_TO_SIZES = {'train': 7494, 'test': 1854}
+SPLITS_TO_SIZES = {'train': 7494, 'test': 1874}
 
 _NUM_CLASSES = 2
 

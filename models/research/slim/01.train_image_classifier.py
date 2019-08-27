@@ -51,7 +51,18 @@ MAXIMUM_STEPS=config.MAXIMUM_STEPS
 quant_delay=config.quant_delay
 resume_dir=config.resume_dir
 batch_size=config.batch_size
-quantize=config.quantize
+quant_delay=config.quant_delay
+ignore_missing=config.ignore_missing
+lr=config.lr
+end_lr=config.end_lr
+lr_decay_factor=config.lr_decay_factor
+optimizer=config.optimizer
+
+
+
+quantize=False
+if(quant_delay>-1):
+    quantize=True
 
 CHECKPOINT=config.CHECKPOINT
 CHECKPOINT_EXCLUDE=config.CHECKPOINT_EXCLUDE
@@ -112,7 +123,7 @@ tf.app.flags.DEFINE_float(
     'weight_decay', 0.00004, 'The weight decay on the model weights.')
 
 tf.app.flags.DEFINE_string(
-    'optimizer', 'rmsprop',
+    'optimizer', optimizer,
     'The name of the optimizer, one of "adadelta", "adagrad", "adam",'
     '"ftrl", "momentum", "sgd" or "rmsprop".')
 
@@ -170,17 +181,17 @@ tf.app.flags.DEFINE_string(
     'Specifies how the learning rate is decayed. One of "fixed", "exponential",'
     ' or "polynomial"')
 
-tf.app.flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
+tf.app.flags.DEFINE_float('learning_rate', lr, 'Initial learning rate.')
 
 tf.app.flags.DEFINE_float(
-    'end_learning_rate', 0.0001,
+    'end_learning_rate', end_lr,
     'The minimal end learning rate used by a polynomial decay learning rate.')
 
 tf.app.flags.DEFINE_float(
     'label_smoothing', 0.0, 'The amount of label smoothing.')
 
 tf.app.flags.DEFINE_float(
-    'learning_rate_decay_factor', 0.94, 'Learning rate decay factor.')
+    'learning_rate_decay_factor', lr_decay_factor, 'Learning rate decay factor.')
 
 tf.app.flags.DEFINE_float(
     'num_epochs_per_decay', 2.0,
@@ -255,7 +266,7 @@ tf.app.flags.DEFINE_string(
     'By default, None would train all the variables.')
 
 tf.app.flags.DEFINE_boolean(
-    'ignore_missing_vars', False,
+    'ignore_missing_vars', ignore_missing,  #cuongnd
     'When restoring a checkpoint would ignore missing variables.')
 
 FLAGS = tf.app.flags.FLAGS

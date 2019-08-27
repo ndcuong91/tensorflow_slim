@@ -1,0 +1,1 @@
+tensorboard --logdir=mobilenet_v1_224_getty_dataset_02/2019-08-25_04.42

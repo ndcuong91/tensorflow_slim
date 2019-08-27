@@ -13,30 +13,30 @@ DATASET_NAME=config.DATASET_NAME
 MODEL_NAME=config.MODEL_NAME
 
 
-# m_file = open(input_file,'rb')
-# gf.ParseFromString(m_file.read())
-# for n in gf.node:
-#     print( n.name )
+m_file = open(input_file,'rb')
+gf.ParseFromString(m_file.read())
+for n in gf.node:
+    print( n.name )
+
+tensor = n.op
+
 #
-# tensor = n.op
-
-
-converter = tflite.TFLiteConverter.from_frozen_graph(input_file,
-                                                      [input_tensor],
-                                                      [output_tensor])
-
-#converter.output_file = "./tflite_model.tflite"
-converter.inference_type = tflite.constants.QUANTIZED_UINT8
-converter.inference_input_type = tflite.constants.QUANTIZED_UINT8
-converter.quantized_input_stats = {input_tensor: (0.0, 255.0)}
-# converter.default_ranges_stats = (0, 6)
-# converter.inference_output_type = tf.float32
-
-converter.dump_graphviz_dir = './'
-
-converter.dump_graphviz_video = False
-
-flatbuffer = converter.convert()
-
-with open(MODEL_NAME+'_'+DATASET_NAME+'.tflite', 'wb') as outfile:
-    outfile.write(flatbuffer)
+# converter = tflite.TFLiteConverter.from_frozen_graph(input_file,
+#                                                       [input_tensor],
+#                                                       [output_tensor])
+#
+# #converter.output_file = "./tflite_model.tflite"
+# converter.inference_type = tflite.constants.QUANTIZED_UINT8
+# converter.inference_input_type = tflite.constants.QUANTIZED_UINT8
+# converter.quantized_input_stats = {input_tensor: (0.0, 255.0)}
+# # converter.default_ranges_stats = (0, 6)
+# # converter.inference_output_type = tf.float32
+#
+# converter.dump_graphviz_dir = './'
+#
+# converter.dump_graphviz_video = False
+#
+# flatbuffer = converter.convert()
+#
+# with open(MODEL_NAME+'_'+DATASET_NAME+'.tflite', 'wb') as outfile:
+#     outfile.write(flatbuffer)

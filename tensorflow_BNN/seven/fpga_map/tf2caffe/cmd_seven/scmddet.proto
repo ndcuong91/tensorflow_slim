@@ -1,0 +1,209 @@
+layer {
+  name: "data"
+  type: "Input"
+  top: "data"
+  input_param {
+    shape {
+      dim: 1
+      dim: 1
+      dim: 4160
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "freqconv"
+  type: "Convolution"
+  bottom: "data"
+  top: "Convolution1"
+  convolution_param {
+    num_output: 32
+    bias_term: false
+    pad: 0
+    kernel_h: 128
+    stride_h: 64
+    kernel_w: 1
+    stride_w: 1
+  }
+}
+layer {
+  name: "freqconv/relu"
+  type: "ReLU"
+  bottom: "Convolution1"
+  top: "Convolution1"
+}
+layer {
+  name: "freqconv/reshape"
+  type: "Reshape"
+  bottom: "Convolution1"
+  top: "pf1"
+  reshape_param {
+    shape {
+      dim: 0
+      dim: 32
+      dim: 32
+      dim: -1
+    }
+  }
+}
+layer {
+  name: "freqconv/transpose"
+  type: "Python"
+  bottom: "pf1"
+  top: "fingerprint"
+  python_param {
+    module: "caffe.layers.speech_detect.transpose"
+    layer: "Transpose"
+    param_str: "0,3,2,1"
+  }
+}
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "fingerprint"
+  top: "Convolution2"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+  }
+}
+layer {
+  name: "conv1/batchnorm"
+  type: "BatchNorm"
+  bottom: "Convolution2"
+  top: "BatchNorm1"
+}
+layer {
+  name: "conv1/batchnorm/scale"
+  type: "Scale"
+  bottom: "BatchNorm1"
+  top: "Scale1"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "conv1/relu"
+  type: "ReLU"
+  bottom: "Scale1"
+  top: "Scale1"
+}
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "Scale1"
+  top: "Pooling1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer {
+  name: "conv2"
+  type: "Convolution"
+  bottom: "Pooling1"
+  top: "Convolution3"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+  }
+}
+layer {
+  name: "conv2/batchnorm"
+  type: "BatchNorm"
+  bottom: "Convolution3"
+  top: "BatchNorm2"
+}
+layer {
+  name: "conv2/batchnorm/scale"
+  type: "Scale"
+  bottom: "BatchNorm2"
+  top: "Scale2"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "conv2/relu"
+  type: "ReLU"
+  bottom: "Scale2"
+  top: "Scale2"
+}
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "Scale2"
+  top: "Pooling2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer {
+  name: "conv3"
+  type: "Convolution"
+  bottom: "Pooling2"
+  top: "Convolution4"
+  convolution_param {
+    num_output: 8
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+  }
+}
+layer {
+  name: "conv3/batchnorm"
+  type: "BatchNorm"
+  bottom: "Convolution4"
+  top: "BatchNorm3"
+}
+layer {
+  name: "conv3/batchnorm/scale"
+  type: "Scale"
+  bottom: "BatchNorm3"
+  top: "Scale3"
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "conv3/relu"
+  type: "ReLU"
+  bottom: "Scale3"
+  top: "Scale3"
+}
+layer {
+  name: "pool3"
+  type: "Pooling"
+  bottom: "Scale3"
+  top: "Pooling3"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer {
+  name: "fc4"
+  type: "InnerProduct"
+  bottom: "Pooling3"
+  top: "InnerProduct1"
+  inner_product_param {
+    num_output: 3
+  }
+}
+layer {
+  name: "prob"
+  type: "Softmax"
+  bottom: "InnerProduct1"
+  top: "prob"
+}

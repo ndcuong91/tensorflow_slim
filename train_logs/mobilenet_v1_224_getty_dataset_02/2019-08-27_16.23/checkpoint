@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-27_16.23/model.ckpt-12864"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-27_16.23/model.ckpt-10011"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-27_16.23/model.ckpt-10725"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-27_16.23/model.ckpt-11437"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-27_16.23/model.ckpt-12152"
+all_model_checkpoint_paths: "/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-27_16.23/model.ckpt-12864"

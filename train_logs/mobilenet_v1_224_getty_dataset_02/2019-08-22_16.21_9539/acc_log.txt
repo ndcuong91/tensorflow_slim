@@ -1,0 +1,3 @@
+eval/Accuracy[0.953684211]
+eval/Accuracy[0.952631593]
+eval/Accuracy[0.94894737]

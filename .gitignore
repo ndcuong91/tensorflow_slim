@@ -1,11 +1,12 @@
 # dataset
 *.tfrecord
 data/
-train_logs/
 *.tar.gz
 *.pb
 *.tflite
 models/downloaded/
+*.prdcv-300
+*.data-00000-of-00001
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

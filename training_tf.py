@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
 # Read data
-mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
+mnist = input_data.read_data_sets("/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/data/mnist/", one_hot=True)
 
 image_size = 28
 labels_size = 10
