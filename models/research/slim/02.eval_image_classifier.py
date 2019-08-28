@@ -28,15 +28,15 @@ import config_image_classifier as config
 
 slim = tf.contrib.slim
 
-TRAIN_DIR=config.PROJ_DIR+ '/train_logs'
-CHECKPOINT= config.resume_dir
-DATASET_NAME=config.DATASET_NAME
-DATASET_DIR=config.DATASET_DIR
-DATASET_SPLIT='test'
-MODEL_NAME=config.MODEL_NAME
+checkpoint_path = config.checkpoint_eval_path
+log_dir=config.log_dir
+dataset_name=config.dataset_name
+dataset_dir=config.dataset_dir
+dataset_split='test'
+model_name=config.model_name
 input_size=config.input_size
 batch_size=config.batch_size
-NUM_THREAD=config.NUM_THREAD
+num_thread=config.num_thread
 quant_delay=config.quant_delay
 quantize=False
 if(quant_delay>-1):
@@ -54,25 +54,25 @@ tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
 
 tf.app.flags.DEFINE_string(
-    'checkpoint_path', CHECKPOINT,
+    'checkpoint_path', checkpoint_path,
     'The directory where the model was written to or an absolute path to a '
     'checkpoint file.')
 
 tf.app.flags.DEFINE_string(
-    'eval_dir', CHECKPOINT, 'Directory where the results are saved to.')
+    'log_dir', log_dir, 'Directory where the results are saved to.')
 
 tf.app.flags.DEFINE_integer(
-    'num_preprocessing_threads', NUM_THREAD,
+    'num_preprocessing_threads', num_thread,
     'The number of threads used to create the batches.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_name', DATASET_NAME, 'The name of the dataset to load.')
+    'dataset_name', dataset_name, 'The name of the dataset to load.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_split_name', DATASET_SPLIT, 'The name of the train/test split.')
+    'dataset_split_name', dataset_split, 'The name of the train/test split.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_dir', DATASET_DIR, 'The directory where the dataset files are stored.')
+    'dataset_dir', dataset_dir, 'The directory where the dataset files are stored.')
 
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
@@ -81,7 +81,7 @@ tf.app.flags.DEFINE_integer(
     'class for the ImageNet dataset.')
 
 tf.app.flags.DEFINE_string(
-    'model_name', MODEL_NAME, 'The name of the architecture to evaluate.')
+    'model_name', model_name, 'The name of the architecture to evaluate.')
 
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
@@ -96,7 +96,7 @@ tf.app.flags.DEFINE_integer(
     'eval_image_size', input_size, 'Eval image size')
 
 tf.app.flags.DEFINE_bool(
-    'quantize', False, 'whether to use quantized graph or not.')
+    'quantize', quantize, 'whether to use quantized graph or not.')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -109,23 +109,17 @@ def main(_):
   with tf.Graph().as_default():
     tf_global_step = slim.get_or_create_global_step()
 
-    ######################
     # Select the dataset #
-    ######################
     dataset = dataset_factory.get_dataset(
         FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
 
-    ####################
     # Select the model #
-    ####################
     network_fn = nets_factory.get_network_fn(
         FLAGS.model_name,
         num_classes=(dataset.num_classes - FLAGS.labels_offset),
         is_training=False)
 
-    ##############################################################
     # Create a dataset provider that loads data from the dataset #
-    ##############################################################
     provider = slim.dataset_data_provider.DatasetDataProvider(
         dataset,
         shuffle=False,
@@ -134,9 +128,7 @@ def main(_):
     [image, label] = provider.get(['image', 'label'])
     label -= FLAGS.labels_offset
 
-    #####################################
     # Select the preprocessing function #
-    #####################################
     preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
     image_preprocessing_fn = preprocessing_factory.get_preprocessing(
         preprocessing_name,
@@ -152,9 +144,7 @@ def main(_):
         num_threads=FLAGS.num_preprocessing_threads,
         capacity=5 * FLAGS.batch_size)
 
-    ####################
     # Define the model #
-    ####################
     logits, _ = network_fn(images)
 
     if FLAGS.quantize:
@@ -204,7 +194,7 @@ def main(_):
     slim.evaluation.evaluate_once(
         master=FLAGS.master,
         checkpoint_path=checkpoint_path,
-        logdir=FLAGS.eval_dir,
+        logdir=FLAGS.log_dir,
         num_evals=num_batches,
         eval_op=list(names_to_updates.values()),
         variables_to_restore=variables_to_restore,

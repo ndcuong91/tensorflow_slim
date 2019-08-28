@@ -36,44 +36,39 @@ import config_image_classifier as config
 
 slim = tf.contrib.slim
 
-finetune=True
-
-DATASET_NAME=config.DATASET_NAME
-DATASET_DIR=config.DATASET_DIR
-DATASET_SPLIT='train'
-MODEL_NAME=config.MODEL_NAME
-TRAIN_DIR=config.PROJ_DIR+ '/train_logs'
-NUM_THREAD=config.NUM_THREAD
+dataset_name=config.dataset_name
+dataset_dir=config.dataset_dir
+dataset_split='train'
+model_name=config.model_name
+train_log_dir=config.train_log_dir
+num_thread=config.num_thread
 input_size=config.input_size
 save_ckpt_every_seconds=config.save_ckpt_every_seconds
 log_every_n_steps=config.log_every_n_steps
-MAXIMUM_STEPS=config.MAXIMUM_STEPS
+maximum_steps=config.maximum_steps
 quant_delay=config.quant_delay
-resume_dir=config.resume_dir
 batch_size=config.batch_size
 quant_delay=config.quant_delay
 ignore_missing=config.ignore_missing
+
 lr=config.lr
 end_lr=config.end_lr
 lr_decay_factor=config.lr_decay_factor
 optimizer=config.optimizer
 
-
-
 quantize=False
 if(quant_delay>-1):
     quantize=True
 
-CHECKPOINT=config.CHECKPOINT
-CHECKPOINT_EXCLUDE=config.CHECKPOINT_EXCLUDE
-TRAINABLE_SCOPE=config.TRAINABLE_SCOPE
-log_dir=''
+checkpoint_path=config.checkpoint_train_path
+checkpoint_exclude=config.checkpoint_exclude
+trainable_scopes=config.trainable_scopes
 
 tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
 
 tf.app.flags.DEFINE_string(
-    'train_dir', TRAIN_DIR,
+    'train_log_dir', train_log_dir,
     'Directory where checkpoints and event logs are written to.')
 
 tf.app.flags.DEFINE_integer('num_clones', 1,
@@ -93,11 +88,11 @@ tf.app.flags.DEFINE_integer(
     'are handled locally by the worker.')
 
 tf.app.flags.DEFINE_integer(
-    'num_readers', NUM_THREAD,
+    'num_readers', num_thread,
     'The number of parallel readers that read data from the dataset.')
 
 tf.app.flags.DEFINE_integer(
-    'num_preprocessing_threads', NUM_THREAD,
+    'num_preprocessing_threads', num_thread,
     'The number of threads used to create the batches.')
 
 tf.app.flags.DEFINE_integer(
@@ -218,13 +213,13 @@ tf.app.flags.DEFINE_float(
 #######################
 
 tf.app.flags.DEFINE_string(
-    'dataset_name', DATASET_NAME, 'The name of the dataset to load.')
+    'dataset_name', dataset_name, 'The name of the dataset to load.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_split_name', 'train', 'The name of the train/test split.')
+    'dataset_split_name', dataset_split, 'The name of the train/test split.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_dir', DATASET_DIR, 'The directory where the dataset files are stored.')
+    'dataset_dir', dataset_dir, 'The directory where the dataset files are stored.')
 
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
@@ -233,7 +228,7 @@ tf.app.flags.DEFINE_integer(
     'class for the ImageNet dataset.')
 
 tf.app.flags.DEFINE_string(
-    'model_name', MODEL_NAME, 'The name of the architecture to train.')
+    'model_name', model_name, 'The name of the architecture to train.')
 
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
@@ -245,23 +240,23 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'train_image_size', input_size, 'Train image size')
 
-tf.app.flags.DEFINE_integer('max_number_of_steps', MAXIMUM_STEPS, 'The maximum number of training steps.')
+tf.app.flags.DEFINE_integer('max_number_of_steps', maximum_steps, 'The maximum number of training steps.')
 
 #####################
 # Fine-Tuning Flags #
 #####################
 
 tf.app.flags.DEFINE_string(
-    'checkpoint_path', CHECKPOINT,
+    'checkpoint_path', checkpoint_path,
     'The path to a checkpoint from which to fine-tune.')
 
 tf.app.flags.DEFINE_string(
-    'checkpoint_exclude_scopes', CHECKPOINT_EXCLUDE,
+    'checkpoint_exclude_scopes', checkpoint_exclude,
     'Comma-separated list of scopes of variables to exclude when restoring '
     'from a checkpoint.')
 
 tf.app.flags.DEFINE_string(
-    'trainable_scopes', TRAINABLE_SCOPE,
+    'trainable_scopes', trainable_scopes,
     'Comma-separated list of scopes to filter the set of variables to train.'
     'By default, None would train all the variables.')
 
@@ -379,21 +374,11 @@ def _get_init_fn():
   """
   if FLAGS.checkpoint_path =='':
     return None
-
-  # Warn the user if a checkpoint exists in the train_dir. Then we'll be
-  # ignoring the checkpoint anyway.
-
-  folder = FLAGS.model_name + '_' + str(FLAGS.train_image_size) + '_' + FLAGS.dataset_name
-  date_time = datetime.now().strftime('%Y-%m-%d_%H.%M')
-  log_dir = os.path.join(FLAGS.train_dir, folder, date_time)
-
-  if (resume_dir == ''):
-    create_dir(log_dir)
   else:
-    log_dir = resume_dir
-  if tf.train.latest_checkpoint(log_dir):
-    tf.logging.info( 'Ignoring --checkpoint_path because a checkpoint already exists in %s'% log_dir)
-    return None
+    log_dir = os.path.dirname(FLAGS.checkpoint_path)
+  # if tf.train.latest_checkpoint(log_dir):
+  #   tf.logging.info( 'Ignoring --checkpoint_path because a checkpoint already exists in %s'% log_dir)
+  #   return None
 
   exclusions = []
   if FLAGS.checkpoint_exclude_scopes !='':
@@ -439,16 +424,29 @@ def _get_variables_to_train():
     variables_to_train.extend(variables)
   return variables_to_train
 
+def logging(dir):
+    import logging
+
+    # get TF logger
+    log = logging.getLogger('tensorflow')
+    log.setLevel(logging.INFO)
+
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(os.path.join(dir,'training_tf.log'))
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(formatter)
+    log.addHandler(fh)
 
 def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-  tf.logging.set_verbosity(tf.logging.INFO)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
+  tf.logging.set_verbosity(tf.logging.ERROR)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
   with tf.Graph().as_default():
-    #######################
     # Config model_deploy #
-    #######################
     deploy_config = model_deploy.DeploymentConfig(
         num_clones=FLAGS.num_clones,
         clone_on_cpu=FLAGS.clone_on_cpu,
@@ -460,32 +458,24 @@ def main(_):
     with tf.device(deploy_config.variables_device()):
       global_step = slim.create_global_step()
 
-    ######################
     # Select the dataset #
-    ######################
     dataset = dataset_factory.get_dataset(
         FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
 
-    ######################
     # Select the network #
-    ######################
     network_fn = nets_factory.get_network_fn(
         FLAGS.model_name,
         num_classes=(dataset.num_classes - FLAGS.labels_offset),
         weight_decay=FLAGS.weight_decay,
         is_training=True)
 
-    #####################################
     # Select the preprocessing function #
-    #####################################
     preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
     image_preprocessing_fn = preprocessing_factory.get_preprocessing(
         preprocessing_name,
         is_training=True)
 
-    ##############################################################
     # Create a dataset provider that loads data from the dataset #
-    ##############################################################
     with tf.device(deploy_config.inputs_device()):
       provider = slim.dataset_data_provider.DatasetDataProvider(
           dataset,
@@ -516,9 +506,7 @@ def main(_):
       images, labels = batch_queue.dequeue()
       logits, end_points = network_fn(images)
 
-      #############################
       # Specify the loss function #
-      #############################
       if 'AuxLogits' in end_points:
         slim.losses.softmax_cross_entropy(
             end_points['AuxLogits'], labels,
@@ -553,9 +541,7 @@ def main(_):
     for variable in slim.get_model_variables():
       summaries.add(tf.summary.histogram(variable.op.name, variable))
 
-    #################################
     # Configure the moving averages #
-    #################################
     if FLAGS.moving_average_decay:
       moving_average_variables = slim.get_model_variables()
       variable_averages = tf.train.ExponentialMovingAverage(
@@ -568,9 +554,7 @@ def main(_):
       tf.contrib.quantize.create_training_graph(
           quant_delay=FLAGS.quantize_delay)
 
-    #########################################
     # Configure the optimization procedure. #
-    #########################################
     with tf.device(deploy_config.optimizer_device()):
       learning_rate = _configure_learning_rate(dataset.num_samples, global_step)
       optimizer = _configure_optimizer(learning_rate)
@@ -617,17 +601,20 @@ def main(_):
     # Merge all summaries together.
     summary_op = tf.summary.merge(list(summaries), name='summary_op')
 
-    ###########################
     # Kicks off the training. #
-    ###########################
     folder = FLAGS.model_name + '_' + str(FLAGS.train_image_size) + '_' + FLAGS.dataset_name
     date_time = datetime.now().strftime('%Y-%m-%d_%H.%M')
-    log_dir = os.path.join(FLAGS.train_dir, folder, date_time)
+    log_dir = os.path.join(FLAGS.train_log_dir, folder, date_time)
 
-    if (resume_dir == ''):
+    if (FLAGS.checkpoint_path == ''):
         create_dir(log_dir)
     else:
-        log_dir = resume_dir
+        log_dir = os.path.dirname(FLAGS.checkpoint_path)
+
+    logging(log_dir)
+    #tf.logging.set_verbosity(tf.logging.INFO)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
+    tf.logging.info(FLAGS.flag_values_dict())
+    saver = tf.train.Saver(max_to_keep=100)
     slim.learning.train(
         train_tensor,
         logdir=log_dir,
@@ -639,8 +626,8 @@ def main(_):
         log_every_n_steps=FLAGS.log_every_n_steps,
         save_summaries_secs=FLAGS.save_summaries_secs,
         save_interval_secs=FLAGS.save_interval_secs,
+        saver=saver,
         sync_optimizer=optimizer if FLAGS.sync_replicas else None)
-
 
 if __name__ == '__main__':
   tf.app.run()
