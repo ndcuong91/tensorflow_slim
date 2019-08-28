@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14/model.ckpt-34580"
+all_model_checkpoint_paths: "/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14/model.ckpt-25446"
+all_model_checkpoint_paths: "/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14/model.ckpt-27762"
+all_model_checkpoint_paths: "/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14/model.ckpt-30025"
+all_model_checkpoint_paths: "/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14/model.ckpt-32286"
+all_model_checkpoint_paths: "/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/train_logs/mobilenet_v1_224_getty_dataset_02/2019-08-23_21.14/model.ckpt-34580"
