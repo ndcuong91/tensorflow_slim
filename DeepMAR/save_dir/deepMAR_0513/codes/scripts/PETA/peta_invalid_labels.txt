@@ -1,0 +1,9 @@
+carryingBabyBuggy
+footwearBoots
+carryingOther
+carryingShoppingTro	
+carryingUmbrella
+footwearLeatherShoes
+footwearSandals
+footwearShoes
+footwearSneaker

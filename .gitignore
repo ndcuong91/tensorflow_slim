@@ -7,11 +7,14 @@ data/
 models/downloaded/
 *.prdcv-300
 
-#checkpoint
+# checkpoint
 *.pbtxt
 *.data-00000-of-00001
 *.meta
 *.index
+
+# pytorch model
+*.pth
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
