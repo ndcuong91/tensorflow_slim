@@ -2,14 +2,22 @@ import tensorflow as tf
 tf.enable_eager_execution()
 from tensorflow import keras
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
-
 import numpy as np
 
 print(tf.__version__)
 
-def build_keras_model(fine_tuning=True):
+checkpoint_path='outputs/test/res50_qt.ckpt'
+output_file='outputs/test/res50_qt_frozen.pb'
+output_tffile='outputs/test/res50_qt_frozen.tflite'
+input_node='resnet50_input'
+output_node='dense/Softmax'
+fine_tuning=True
+size=112
+input_shape=(size,size,3)
+
+def build_keras_model():
     if(fine_tuning):
-        base_model = keras.applications.mobilenet.MobileNet(weights='imagenet', include_top=False)
+        base_model = keras.applications.resnet50.ResNet50(input_shape=input_shape, weights=None, include_top=False)
         global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
         prediction_layer = Dense(10, activation='softmax')
         model = keras.Sequential([
@@ -28,17 +36,19 @@ def build_keras_model(fine_tuning=True):
     return model
 
 def train1():
+    print('Train----------------------------------')
     fashion_mnist = keras.datasets.fashion_mnist
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
     train_images = train_images / 255.0
     test_images = test_images / 255.0
 
-    train_images=np.zeros(shape=(3000,224,224,3))
-    train_labels=np.zeros(shape=(3000))
+    if(fine_tuning):
+        train_images=np.zeros(shape=(1000,size,size,3))
+        train_labels=np.zeros(shape=(1000))
 
-    test_images=np.zeros(shape=(600,224,224,3))
-    test_labels=np.zeros(shape=(600))
+        test_images=np.zeros(shape=(600,size,size,3))
+        test_labels=np.zeros(shape=(600))
     # train
     train_graph = tf.Graph()
     train_sess = tf.Session(graph=train_graph)
@@ -46,8 +56,8 @@ def train1():
     keras.backend.set_session(train_sess)
     with train_graph.as_default():
         train_model = build_keras_model()
-
-        #tf.contrib.quantize.create_training_graph(input_graph=train_graph, quant_delay=100)
+        tf.contrib.quantize.create_training_graph(input_graph=train_graph, quant_delay=0)
+        #writer = tf.summary.FileWriter("outputs", train_sess.graph)
         train_sess.run(tf.global_variables_initializer())
 
         train_model.compile(
@@ -55,11 +65,58 @@ def train1():
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
-        train_model.fit(train_images, train_labels, epochs=5)
+        train_model.fit(train_images, train_labels, epochs=1)
+        #writer.close()
 
         # save graph and checkpoints
         saver = tf.train.Saver()
-        saver.save(train_sess, '/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/outputs/custom.ckpt')
+        saver.save(train_sess, checkpoint_path)
+    print ('Finish save checkpoint file', checkpoint_path)
+
+def eval1():
+    print('Eval----------------------------------')
+    eval_graph = tf.Graph()
+    eval_sess = tf.Session(graph=eval_graph)
+    keras.backend.set_session(eval_sess)
+
+    with eval_graph.as_default():
+        keras.backend.set_learning_phase(0)
+        eval_model = build_keras_model()
+        tf.contrib.quantize.create_eval_graph(input_graph=eval_graph)
+        eval_graph_def = eval_graph.as_graph_def()
+        saver = tf.train.Saver()
+        saver.restore(eval_sess, checkpoint_path)
+
+        frozen_graph_def = tf.graph_util.convert_variables_to_constants(
+            eval_sess,
+            eval_graph_def,
+            [eval_model.output.op.name]
+        )
+        with open(output_file, 'wb') as f:
+            f.write(frozen_graph_def.SerializeToString())
+    print ('Finish create frozen file', output_file)
+
+import tensorflow.contrib.lite as tflite
+def convert():
+    converter = tflite.TFLiteConverter.from_frozen_graph(output_file, [input_node], [output_node])
+
+    # converter.output_file = "./tflite_model.tflite"
+    converter.inference_type = tflite.constants.QUANTIZED_UINT8
+    converter.inference_input_type = tflite.constants.QUANTIZED_UINT8
+    converter.quantized_input_stats = {input_node: (0.0, 255.0)}
+    # converter.default_ranges_stats = (0, 6)
+    # converter.inference_output_type = tf.float32
+
+    converter.dump_graphviz_dir = './'
+
+    converter.dump_graphviz_video = False
+
+    flatbuffer = converter.convert()
+
+    with open(output_tffile, 'wb') as outfile:
+        outfile.write(flatbuffer)
+    print ('Finish convert frozen file',output_file)
+    print ('to tflite file',output_tffile)
 
 def train_cat_and_dog():
     import tensorflow_datasets as tfds
@@ -89,12 +146,8 @@ def train_cat_and_dog():
     validation_batches = validation.batch(BATCH_SIZE)
     test_batches = test.batch(BATCH_SIZE)
 
-
-
     for image_batch, label_batch in train_batches.take(1):
         pass
-
-
     IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
     # Create the base model from the pre-trained model MobileNet V2
@@ -145,8 +198,8 @@ def train_cat_and_dog():
         saver = tf.train.Saver()
         saver.save(train_sess, '/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/outputs/test.ckpt')
 
-
-
 if __name__ == '__main__':
     #train_cat_and_dog()
     train1()
+    eval1()
+    convert()

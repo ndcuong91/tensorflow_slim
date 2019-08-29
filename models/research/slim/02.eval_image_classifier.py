@@ -105,7 +105,7 @@ def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-  tf.logging.set_verbosity(tf.logging.INFO)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
+  tf.logging.set_verbosity(tf.logging.ERROR)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
   with tf.Graph().as_default():
     tf_global_step = slim.get_or_create_global_step()
 
@@ -188,17 +188,27 @@ def main(_):
     else:
       checkpoint_path = FLAGS.checkpoint_path
 
+    tf.logging.set_verbosity(tf.logging.INFO)
     tf.logging.info('Evaluating %s' % checkpoint_path)
 
-    conf = tf.ConfigProto(device_count={'GPU': 0})  #
-    slim.evaluation.evaluate_once(
-        master=FLAGS.master,
-        checkpoint_path=checkpoint_path,
-        logdir=FLAGS.log_dir,
-        num_evals=num_batches,
-        eval_op=list(names_to_updates.values()),
-        variables_to_restore=variables_to_restore,
-        session_config=conf)
+    if(config.cpu):
+        conf = tf.ConfigProto(device_count={'GPU': 0})  #
+        slim.evaluation.evaluate_once(
+            master=FLAGS.master,
+            checkpoint_path=checkpoint_path,
+            logdir=FLAGS.log_dir,
+            num_evals=num_batches,
+            eval_op=list(names_to_updates.values()),
+            variables_to_restore=variables_to_restore,
+            session_config=conf)
+    else:
+        slim.evaluation.evaluate_once(
+            master=FLAGS.master,
+            checkpoint_path=checkpoint_path,
+            logdir=FLAGS.log_dir,
+            num_evals=num_batches,
+            eval_op=list(names_to_updates.values()),
+            variables_to_restore=variables_to_restore)
 
     # eval_interval_secs = config.save_ckpt_every_seconds  # How often to run the evaluation.
     # slim.evaluation.evaluation_loop(

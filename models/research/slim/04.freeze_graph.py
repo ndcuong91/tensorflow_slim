@@ -57,14 +57,14 @@ from tensorflow.python.saved_model import tag_constants
 from tensorflow.python.tools import saved_model_utils
 from tensorflow.python.training import checkpoint_management
 from tensorflow.python.training import saver as saver_lib
+import tensorflow as tf
 
 import config_image_classifier as config
 
 input_graph=config.output_graph
-input_ckpt=config.checkpoint
+input_ckpt=config.checkpoint_path
+output_node=config.output_node
 output_file=config.output_file
-output_node='MobilenetV1/Predictions/Softmax'
-
 
 
 def _has_no_variables(sess):
@@ -497,4 +497,9 @@ def run_main():
 
 
 if __name__ == "__main__":
-  run_main()
+    print('Program begin')
+    tf.logging.set_verbosity(tf.logging.ERROR)
+    run_main()
+    print ('Graph file',input_graph)
+    print ('Checkpoint file',input_ckpt)
+    print ('Finish create frozen file',output_file)

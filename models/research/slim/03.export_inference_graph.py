@@ -65,11 +65,11 @@ from nets import nets_factory
 import config_image_classifier as config
 
 
-MODEL_NAME=config.MODEL_NAME
+model_name=config.model_name
 input_size=config.input_size
 quant_delay=config.quant_delay
-DATASET_NAME=config.DATASET_NAME
-DATASET_DIR=config.DATASET_DIR
+dataset_name=config.dataset_name
+dataset_dir=config.dataset_dir
 quantize=False
 if(quant_delay>-1):
     quantize=True
@@ -79,7 +79,7 @@ write_text_graphdef=True #use True to fix bug in freeze_graph.py
 slim = tf.contrib.slim
 
 tf.app.flags.DEFINE_string(
-    'model_name', MODEL_NAME, 'The name of the architecture to save.')
+    'model_name', model_name, 'The name of the architecture to save.')
 
 tf.app.flags.DEFINE_boolean(
     'is_training', False,
@@ -94,7 +94,7 @@ tf.app.flags.DEFINE_integer(
     'Batch size for the exported model. Defaulted to "None" so batch size can '
     'be specified at model runtime.')
 
-tf.app.flags.DEFINE_string('dataset_name', DATASET_NAME,
+tf.app.flags.DEFINE_string('dataset_name', dataset_name,
                            'The name of the dataset to use with the model.')
 
 tf.app.flags.DEFINE_integer(
@@ -107,7 +107,7 @@ tf.app.flags.DEFINE_string(
     'output_file', output_file, 'Where to save the resulting file to.')
 
 tf.app.flags.DEFINE_string(
-    'dataset_dir', DATASET_DIR, 'Directory to save intermediate dataset files to')
+    'dataset_dir', dataset_dir, 'Directory to save intermediate dataset files to')
 
 tf.app.flags.DEFINE_bool(
     'quantize', quantize, 'whether to use quantized graph or not.')
@@ -162,8 +162,10 @@ def main(_):
     else:
       with gfile.GFile(FLAGS.output_file, 'wb') as f:
         f.write(graph_def.SerializeToString())
+    print('Finish export inference graph file', output_file)
 
 
 if __name__ == '__main__':
-  tf.app.run()
-  print ('Finish export inference graph!')
+    print('Program begin')
+    tf.logging.set_verbosity(tf.logging.ERROR)
+    tf.app.run()

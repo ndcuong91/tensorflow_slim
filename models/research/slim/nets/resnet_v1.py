@@ -122,6 +122,11 @@ def bottleneck(inputs,
 
     residual = slim.conv2d(inputs, depth_bottleneck, [1, 1], stride=1,
                            scope='conv1')
+
+    #datnv
+    # print('DatTV. Add batchnorm1')
+    # residual = slim.batch_norm(residual)
+    #
     residual = resnet_utils.conv2d_same(residual, depth_bottleneck, 3, stride,
                                         rate=rate, scope='conv2')
     residual = slim.conv2d(residual, depth, [1, 1], stride=1,
@@ -130,9 +135,13 @@ def bottleneck(inputs,
     if use_bounded_activations:
       # Use clip_by_value to simulate bandpass activation.
       residual = tf.clip_by_value(residual, -6.0, 6.0)
+      #output = slim.batch_norm(shortcut + residual)
       output = tf.nn.relu6(shortcut + residual)
+      #print('DatTV. Add batchnorm before act') #datnv
     else:
-      output = tf.nn.relu(shortcut + residual)
+      #output = slim.batch_norm(shortcut + residual)
+      output = tf.nn.relu6(shortcut + residual)
+      #print('DatTV. Add batchnorm before act') #datnv
 
     return slim.utils.collect_named_outputs(outputs_collections,
                                             sc.name,

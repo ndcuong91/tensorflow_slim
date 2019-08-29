@@ -29,6 +29,8 @@ from tensorflow.python.platform import app
 from tensorflow.python.platform import gfile
 from tensorflow.python.summary import summary
 
+import config_image_classifier as config
+
 
 def import_to_tensorboard(model_dir, log_dir):
   """View an imported protobuf model (`.pb` file) as a graph in Tensorboard.
@@ -58,12 +60,13 @@ def main(unused_args):
   import_to_tensorboard(FLAGS.model_dir, FLAGS.log_dir)
 
 if __name__ == "__main__":
+
   parser = argparse.ArgumentParser()
   parser.register("type", "bool", lambda v: v.lower() == "true")
   parser.add_argument(
       "--model_dir",
       type=str,
-      default="/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/outputs/mobilenet_v1_qt_224_9000_with_ckpt.pb",
+      default=config.output_file,
       help="The location of the protobuf (\'pb\') model to visualize.")
   parser.add_argument(
       "--log_dir",

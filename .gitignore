@@ -6,7 +6,12 @@ data/
 *.tflite
 models/downloaded/
 *.prdcv-300
+
+#checkpoint
+*.pbtxt
 *.data-00000-of-00001
+*.meta
+*.index
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

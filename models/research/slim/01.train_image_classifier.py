@@ -40,10 +40,11 @@ dataset_name=config.dataset_name
 dataset_dir=config.dataset_dir
 dataset_split='train'
 model_name=config.model_name
-train_log_dir=config.train_log_dir
+output_dir=config.output_dir
 num_thread=config.num_thread
 input_size=config.input_size
 save_ckpt_every_seconds=config.save_ckpt_every_seconds
+log_every_n_steps=config.log_every_n_steps
 log_every_n_steps=config.log_every_n_steps
 maximum_steps=config.maximum_steps
 quant_delay=config.quant_delay
@@ -68,7 +69,7 @@ tf.app.flags.DEFINE_string(
     'master', '', 'The address of the TensorFlow master to use.')
 
 tf.app.flags.DEFINE_string(
-    'train_log_dir', train_log_dir,
+    'output_dir', output_dir,
     'Directory where checkpoints and event logs are written to.')
 
 tf.app.flags.DEFINE_integer('num_clones', 1,
@@ -373,12 +374,10 @@ def _get_init_fn():
     An init function run by the supervisor.
   """
   if FLAGS.checkpoint_path =='':
+    print('Training from scratch!')
     return None
   else:
     log_dir = os.path.dirname(FLAGS.checkpoint_path)
-  # if tf.train.latest_checkpoint(log_dir):
-  #   tf.logging.info( 'Ignoring --checkpoint_path because a checkpoint already exists in %s'% log_dir)
-  #   return None
 
   exclusions = []
   if FLAGS.checkpoint_exclude_scopes !='':
@@ -604,7 +603,7 @@ def main(_):
     # Kicks off the training. #
     folder = FLAGS.model_name + '_' + str(FLAGS.train_image_size) + '_' + FLAGS.dataset_name
     date_time = datetime.now().strftime('%Y-%m-%d_%H.%M')
-    log_dir = os.path.join(FLAGS.train_log_dir, folder, date_time)
+    log_dir = os.path.join(FLAGS.output_dir, folder, date_time)
 
     if (FLAGS.checkpoint_path == ''):
         create_dir(log_dir)
