@@ -1,7 +1,8 @@
 import os
 
 output_dir='../../../outputs'
-dataset_name='getty_dataset_02'
+dataset_name='peta_v2'
+#dataset_name='getty_dataset_02'
 dataset_dir='../../../data/'+dataset_name
 model_name='resnet_v1_50' #inception_v3  #mobilenet_v1 #resnet_v1_50
 
@@ -9,8 +10,8 @@ model_name='resnet_v1_50' #inception_v3  #mobilenet_v1 #resnet_v1_50
 ## hyper-params
 num_thread=8
 input_size=224
-batch_size=8
-quant_delay=10000
+batch_size=32
+quant_delay=10
 save_ckpt_every_seconds=300
 log_every_n_steps=100
 maximum_steps=600000
@@ -22,7 +23,7 @@ optimizer='rmsprop'
 ## others
 checkpoint_train_path='../../../outputs/mobilenet_v1_224_getty_dataset_02/qt_model/model.ckpt-12152'  #can be directory or specific checkpoint to fine-tune
 checkpoint_train_path='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/resnet50_v1/resnet_v1_50.ckpt' #training from scratch
-#checkpoint_train_path='' #training from scratch
+checkpoint_train_path='' #training from scratch
 if(checkpoint_train_path !=''):
     lr=0.001
 checkpoint_exclude= 'resnet_v1_50/logits,resnet_v1_50/AuxLogits'# 'resnet_v1_50/logits,resnet_v1_50/AuxLogits'  #'InceptionV3/Logits,InceptionV3/AuxLogits'  #'MobilenetV1/Logits'

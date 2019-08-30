@@ -24,6 +24,7 @@ from datasets import imagenet
 from datasets import mnist
 from datasets import visualwakewords
 from datasets import getty_dataset_02
+from datasets import peta_v2
 
 datasets_map = {
     'cifar10': cifar10,
@@ -32,6 +33,7 @@ datasets_map = {
     'mnist': mnist,
     'visualwakewords': visualwakewords,
     'getty_dataset_02': getty_dataset_02,
+    'peta_v2': peta_v2,
 }
 
 
