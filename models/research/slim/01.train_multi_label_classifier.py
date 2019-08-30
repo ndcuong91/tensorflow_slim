@@ -46,7 +46,6 @@ num_thread=config.num_thread
 input_size=config.input_size
 save_ckpt_every_seconds=config.save_ckpt_every_seconds
 log_every_n_steps=config.log_every_n_steps
-log_every_n_steps=config.log_every_n_steps
 maximum_steps=config.maximum_steps
 quant_delay=config.quant_delay
 batch_size=config.batch_size
@@ -312,7 +311,6 @@ def _configure_learning_rate(num_samples_per_epoch, global_step):
     raise ValueError('learning_rate_decay_type [%s] was not recognized' %
                      FLAGS.learning_rate_decay_type)
 
-
 def _configure_optimizer(learning_rate):
   """Configures the optimizer used for training.
 
@@ -364,7 +362,6 @@ def _configure_optimizer(learning_rate):
     raise ValueError('Optimizer [%s] was not recognized' % FLAGS.optimizer)
   return optimizer
 
-
 def _get_init_fn():
   """Returns a function run by the chief worker to warm-start the training.
 
@@ -406,7 +403,6 @@ def _get_init_fn():
       variables_to_restore,
       ignore_missing_vars=FLAGS.ignore_missing_vars)
 
-
 def _get_variables_to_train():
   """Returns a list of variables to train.
 
@@ -444,7 +440,7 @@ def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-  tf.logging.set_verbosity(tf.logging.ERROR)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
+  tf.logging.set_verbosity(tf.logging.DEBUG)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
   with tf.Graph().as_default():
     # Config model_deploy #
     deploy_config = model_deploy.DeploymentConfig(

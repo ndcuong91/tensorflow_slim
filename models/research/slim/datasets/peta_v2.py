@@ -8,18 +8,16 @@ import tensorflow as tf
 slim = tf.contrib.slim
 
 _FILE_PATTERN = '%s-*.tfrecord'
-
 _SPLITS_TO_SIZES = {'train': 29649, 'test': 1376}
-
 _NUM_CLASSES = 31
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying size.',
     'label': 'A list of labels',
-    'verb': 'A list of one, one per each label',
+    'adj': 'A list of one, one per each label',
 }
 
-_LABELS_FILENAME = '/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/pytorch/data/PETA_tfrecord/label_map.txt'
+_LABELS_FILENAME = '/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/tfrecord/label_map.txt'
 
 def read_label_file(label_file_path):
     with tf.gfile.Open(label_file_path, 'rb') as f:
@@ -50,15 +48,13 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
         'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
         'image/format': tf.FixedLenFeature((), tf.string, default_value='jpeg'),
         'image/class/label': tf.FixedLenFeature([], tf.string),
-        #'image/class/object': tf.VarLenFeature(dtype=tf.string),
-        #'image/class/verb': tf.VarLenFeature(dtype=tf.string),
+        #'image/class/adj': tf.VarLenFeature(dtype=tf.string),
     }
 
     items_to_handlers = {
         'image': slim.tfexample_decoder.Image('image/encoded', 'image/format'),
         'label': slim.tfexample_decoder.Tensor('image/class/label'),
-        #'object': slim.tfexample_decoder.Tensor('image/class/object'),
-        #'verb': slim.tfexample_decoder.Tensor('image/class/verb'),
+        #'adj': slim.tfexample_decoder.Tensor('image/class/adj'),
     }
 
     decoder = slim.tfexample_decoder.TFExampleDecoder(

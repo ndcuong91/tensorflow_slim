@@ -22,8 +22,8 @@ lr_decay_factor=0.94
 optimizer='rmsprop'
 ## others
 checkpoint_train_path='../../../outputs/mobilenet_v1_224_getty_dataset_02/qt_model/model.ckpt-12152'  #can be directory or specific checkpoint to fine-tune
-checkpoint_train_path='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/models/downloaded/resnet50_v1/resnet_v1_50.ckpt' #training from scratch
-checkpoint_train_path='' #training from scratch
+checkpoint_train_path='../../../models/downloaded/resnet50_v1/resnet_v1_50.ckpt' #training from scratch
+#checkpoint_train_path='' #training from scratch
 if(checkpoint_train_path !=''):
     lr=0.001
 checkpoint_exclude= 'resnet_v1_50/logits,resnet_v1_50/AuxLogits'# 'resnet_v1_50/logits,resnet_v1_50/AuxLogits'  #'InceptionV3/Logits,InceptionV3/AuxLogits'  #'MobilenetV1/Logits'

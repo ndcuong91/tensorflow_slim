@@ -73,10 +73,10 @@ import threading
 import numpy as np
 import tensorflow as tf
 
-output_dir='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/pytorch/data/PETA_tfrecord'
+output_dir='/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/tfrecord'
 num_class=31
 
-data_dir = '/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/pytorch/data/PETA_tfrecord'
+data_dir = '/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/tfrecord'
 label_map_path = os.path.join(data_dir, 'label_map.txt')
 label_train_path = os.path.join(data_dir, 'label_train.txt')
 label_test_path = os.path.join(data_dir, 'label_test.txt')
@@ -98,7 +98,7 @@ tf.app.flags.DEFINE_integer('num_threads', 4,
                             'Number of threads to preprocess the images.')
 
 
-# This file contains mapping from label to object-verb description.
+# This file contains mapping from label to adj description.
 # Assumes each line of the file looks like:
 #
 #   0 airplane board
@@ -174,11 +174,11 @@ def _convert_to_example(image_data, filename, label, label_text, height, width):
   channels = 3
   image_format = 'JPEG'
 
-  verb = []
+  adj = []
   
   for text in label_text:
    assert len(text) == 1
-   verb.append(text[0])
+   adj.append(text[0])
 
   
   example = tf.train.Example(features=tf.train.Features(feature={
@@ -190,7 +190,7 @@ def _convert_to_example(image_data, filename, label, label_text, height, width):
       'image/filename': _bytes_feature(filename.encode()),
       'image/encoded': _bytes_feature(image_data),
       'image/class/label': _bytes_feature(label),   # of shape (600,)
-      'image/class/verb': _bytes_feature([x.encode() for x in verb])}))
+      'image/class/adj': _bytes_feature([x.encode() for x in adj])}))
   return example
 
 
@@ -275,7 +275,7 @@ def _process_dataset(name, data_dir, filenames_file, labels_file,
     filenames_file: string, path to the filenames file
     labels_file: string, path to the label file
     num_shards: integer number of shards for this data set.
-    label_to_text: dict of label to object-verb descriptions, e.g.,
+    label_to_text: dict of label to adj descriptions, e.g.,
       0 --> 'airplane, board'
     output_dir: string, path to the output directory
   """
@@ -353,11 +353,11 @@ def _process_dataset(name, data_dir, filenames_file, labels_file,
   sys.stdout.flush()
 
 def _build_label_lookup(label_text):
-  """Build lookup for label to object-verb description.
+  """Build lookup for label to adj description.
 
   Args:
     label_text: string, path to file containing mapping from
-      label to object-verb description.
+      label to adj description.
 
       Assumes each line of the file looks like:
 
@@ -398,7 +398,7 @@ def main(unused_argv):
   
   print('Saving results to %s' % FLAGS.output_dir)
 
-  # Build a map from label to object-verb descriptions.
+  # Build a map from label to adj descriptions.
   label_text_file = os.path.join(FLAGS.data_dir, FLAGS.label_text)
   label_to_text = _build_label_lookup(label_text_file)
   #print(label_to_text[0])
