@@ -11,7 +11,6 @@ from nets import nets_factory
 
 import config_image_classifier as config
 
-
 slim = tf.contrib.slim
 
 image_size = config.input_size
@@ -22,34 +21,29 @@ checkpoint_path=config.checkpoint_eval_path
 model_name=config.model_name
 quant_delay=config.quant_delay
 output_dir=config.output_dir
+num_thread=config.num_thread
 
 tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')
-
-tf.app.flags.DEFINE_string(
-    'model_name', model_name, 'The name of the architecture to test.')
-tf.flags.DEFINE_string('dataset_dir', dataset_dir,
-                       'The directory where the dataset files are stored')
-tf.flags.DEFINE_string('checkpoint_path', checkpoint_path,
-                       'The directory where the pretrained model is stored')
-tf.flags.DEFINE_integer('num_classes', 31,
-                        'Number of classes')
-tf.app.flags.DEFINE_string(
-    'dataset_name', dataset_name, 'The name of the dataset to load.')
-tf.app.flags.DEFINE_string(
-    'dataset_split_name', dataset_split, 'The name of the train/test split.')
+tf.app.flags.DEFINE_string('model_name', model_name, 'The name of the architecture to test.')
+tf.flags.DEFINE_string('dataset_dir', dataset_dir,'The directory where the dataset files are stored')
+tf.flags.DEFINE_string('checkpoint_path', checkpoint_path,'The directory where the pretrained model is stored')
+tf.app.flags.DEFINE_string('dataset_name', dataset_name, 'The name of the dataset to load.')
+tf.app.flags.DEFINE_string('dataset_split_name', dataset_split, 'The name of the train/test split.')
+tf.app.flags.DEFINE_integer(
+    'num_readers', num_thread,
+    'The number of parallel readers that read data from the dataset.')
+tf.app.flags.DEFINE_integer(
+    'num_preprocessing_threads', num_thread,
+    'The number of threads used to create the batches.')
 
 FLAGS = tf.app.flags.FLAGS
 
-num_class=31
-total_samples=1376
-
-# reference: https://github.com/broadinstitute/keras-rcnn/issues/6
-def cal_mAP(y_pred, y_true):
+def cal_mAP(y_pred, y_true, num_samples=1376, num_class=31):
     true_preds = []
     for i in range(num_class):
         true_preds.append(0)
 
-    for i in range(total_samples):
+    for i in range(num_samples):
         for j in range(31):
             true_val=y_true[i][j]
             pred_val=y_pred[i][j]
@@ -65,19 +59,18 @@ def cal_mAP(y_pred, y_true):
                 true_preds[j]+=1
     accum_acc = 0
     for i in range(num_class):
-        acc = float(true_preds[i]) / float(total_samples)
+        acc = float(true_preds[i]) / float(num_samples)
         accum_acc += acc
-        print('Class ', i, ':', acc)
-    print('Final acc:', accum_acc / float(num_class))
-    return 0
+        print('Class ', i, ':', round(acc,3))
+    #print('Final acc:', accum_acc / float(num_class))
+    return accum_acc / float(num_class)
 
-
-
-def calculate_mAP(y_pred, y_true):
+# reference: https://github.com/broadinstitute/keras-rcnn/issues/6
+def calculate_mAP(y_pred, y_true, num_class=31):
     num_classes = y_true.shape[1]
     average_precisions = []
 
-    for index in range(FLAGS.num_classes):
+    for index in range(num_class):
         pred = y_pred[:, index]
         label = y_true[:, index]
 
@@ -92,7 +85,6 @@ def calculate_mAP(y_pred, y_true):
         tp = np.cumsum(tp)
 
         npos = np.sum(sorted_label)
-
         recall = tp * 1.0 / npos
 
         # avoid divide by zero in case the first detection matches a difficult
@@ -111,9 +103,11 @@ def calculate_mAP(y_pred, y_true):
         i = np.where(mrec[1:] != mrec[:-1])[0]
 
         # and sum (\Delta recall) * prec
+        AP = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+        print('Class ', index, ':', round(AP, 3))
         average_precisions.append(np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1]))
 
-    print(average_precisions)
+    #print(average_precisions)
     mAP = np.mean(average_precisions)
 
     return mAP
@@ -127,7 +121,7 @@ def main(_):
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
         data_provider = slim.dataset_data_provider.DatasetDataProvider(
             dataset,
-            num_readers=1,
+            num_readers=FLAGS.num_readers,
             common_queue_capacity=20 * FLAGS.batch_size,
             common_queue_min=10 * FLAGS.batch_size,
             shuffle=False)
@@ -135,11 +129,10 @@ def main(_):
         image, label = data_provider.get(['image', 'label'])
 
         label = tf.decode_raw(label, tf.float32)
-
-        label = tf.reshape(label, [FLAGS.num_classes])
+        label = tf.reshape(label, [dataset.num_classes])
 
         # Preprocess images
-        preprocessing_name = FLAGS.model_name
+        preprocessing_name = 'deepmar'
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(preprocessing_name, is_training=False)
         image = image_preprocessing_fn(image, image_size, image_size)
 
@@ -147,7 +140,7 @@ def main(_):
         images, labels = tf.train.batch(
             [image, label],
             batch_size=FLAGS.batch_size,
-            num_threads=1,
+            num_threads=FLAGS.num_preprocessing_threads,
             capacity=5 * FLAGS.batch_size,
             allow_smaller_final_batch=True)
 
@@ -177,13 +170,15 @@ def main(_):
             slim.get_variables_to_restore())
 
         num_samples=data_provider.num_samples()
-        num_batches = math.ceil(data_provider.num_samples() / float(FLAGS.batch_size))
+        num_batches = math.ceil(num_samples / float(FLAGS.batch_size))
 
         prediction_list = []
         label_list = []
         count = 0
 
-        conf = tf.ConfigProto(device_count={'GPU': 0})  #
+        conf=None
+        if (config.cpu):
+            conf = tf.ConfigProto(device_count={'GPU': 0})  #
         with tf.Session(config=conf) as sess:
             with slim.queues.QueueRunners(sess):
                 sess.run(tf.local_variables_initializer())
@@ -203,8 +198,10 @@ def main(_):
         prediction_arr = np.concatenate(prediction_list, axis=0)
         label_arr = np.concatenate(label_list, axis=0)
 
-        mAP = cal_mAP(prediction_arr, label_arr)
-        #print('mAP score: {}'.format(mAP))
+        result = cal_mAP(prediction_arr, label_arr, num_samples=num_samples, num_class=dataset.num_classes)
+        print('mAP score: {}'.format(result))
+        result = calculate_mAP(prediction_arr, label_arr)
+        print('mAP score: {}'.format(result))
 
 
 if __name__ == '__main__':

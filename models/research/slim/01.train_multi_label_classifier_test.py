@@ -24,11 +24,15 @@ model_name=config.model_name
 quant_delay=config.quant_delay
 output_dir=config.output_dir
 log_every_n_steps=config.log_every_n_steps
+trainable_scopes=config.trainable_scopes
+num_thread=config.num_thread
+batch_size=config.batch_size
+
 
 tf.app.flags.DEFINE_string(
     'model_name', model_name, 'The name of the architecture to train.')
-tf.flags.DEFINE_integer('batch_size', 64, 'Batch size')
-tf.flags.DEFINE_integer('epochs', 100, 'Number of training epochs')
+tf.flags.DEFINE_integer('batch_size', batch_size, 'Batch size')
+tf.flags.DEFINE_integer('epochs', 50, 'Number of training epochs')
 tf.flags.DEFINE_float('learning_rate', 1e-3, 'Initial learning rate')
 
 tf.flags.DEFINE_string('dataset_dir', dataset_dir,
@@ -53,15 +57,23 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'log_every_n_steps', log_every_n_steps,
     'The frequency with which logs are print.')
+tf.app.flags.DEFINE_string(
+    'trainable_scopes', trainable_scopes,
+    'Comma-separated list of scopes to filter the set of variables to train.'
+    'By default, None would train all the variables.')
+tf.app.flags.DEFINE_integer(
+    'num_readers', num_thread,
+    'The number of parallel readers that read data from the dataset.')
+tf.app.flags.DEFINE_integer(
+    'num_preprocessing_threads', num_thread,
+    'The number of threads used to create the batches.')
 
 FLAGS = tf.app.flags.FLAGS
 
 
 def get_init_fn():
     checkpoint_exclude_scopes = ['resnet_v1_50/logits','resnet_v1_50/AuxLogits']
-
     exclusions = [scope.strip() for scope in checkpoint_exclude_scopes]
-
     variables_to_restore = []
     for var in slim.get_model_variables():
         excluded = False
@@ -74,6 +86,25 @@ def get_init_fn():
 
     return slim.assign_from_checkpoint_fn(FLAGS.checkpoint_path,variables_to_restore, ignore_missing_vars=True)
 
+
+def _get_variables_to_train():
+  """Returns a list of variables to train.
+
+  Returns:
+    A list of variables to train by the optimizer.
+  """
+  if FLAGS.trainable_scopes =='':
+    print('Train all variables!')
+    return tf.trainable_variables()
+  else:
+    print('Train some variables!')
+    scopes = [scope.strip() for scope in FLAGS.trainable_scopes.split(',')]
+
+  variables_to_train = []
+  for scope in scopes:
+    variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
+    variables_to_train.extend(variables)
+  return variables_to_train
 
 def logging(dir):
     import logging
@@ -100,7 +131,7 @@ def main(_):
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
         data_provider = slim.dataset_data_provider.DatasetDataProvider(
             dataset,
-            num_readers=4,
+            num_readers=FLAGS.num_readers,
             common_queue_capacity=20 * FLAGS.batch_size,
             common_queue_min=10 * FLAGS.batch_size)
 
@@ -111,7 +142,7 @@ def main(_):
         label = tf.reshape(label, [FLAGS.num_classes])
 
         # Preprocess images
-        preprocessing_name = FLAGS.model_name
+        preprocessing_name = 'deepmar'
         image_preprocessing_fn = preprocessing_factory.get_preprocessing(preprocessing_name,is_training=True)
         image = image_preprocessing_fn(image, image_size, image_size)
 
@@ -119,7 +150,7 @@ def main(_):
         images, labels = tf.train.batch(
             [image, label],
             batch_size=FLAGS.batch_size,
-            num_threads=4,
+            num_threads=FLAGS.num_preprocessing_threads,
             capacity=5 * FLAGS.batch_size)
 
         # Create the model
@@ -138,19 +169,20 @@ def main(_):
             tf.contrib.quantize.create_training_graph(
                 quant_delay=0)
 
+        # Gather initial summaries.
+        summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
+
+        for loss in tf.get_collection(tf.GraphKeys.LOSSES):
+            summaries.add(tf.summary.scalar('losses/%s' % loss.op.name, loss))
+
         cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels)
         loss = tf.reduce_mean(cross_entropy)
 
         # Add summaries
         tf.summary.scalar('loss', loss)
 
-        # Fine-tune only the new layers
-        trainable_scopes = ['resnet_v1_50/logits','resnet_v1_50/AuxLogits']
-        scopes = [scope.strip() for scope in trainable_scopes]
-        variables_to_train = []
-        for scope in scopes:
-            variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope)
-            variables_to_train.extend(variables)
+        # Variables to train.
+        variables_to_train = _get_variables_to_train()
 
         optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
 

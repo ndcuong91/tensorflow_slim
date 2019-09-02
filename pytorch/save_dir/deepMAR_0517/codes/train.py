@@ -154,7 +154,7 @@ def train():
             normalize,
             ])
 
-    dataset = PETADataLoader(listfile='scripts/PETA/train_list_v2.txt', transform=transform)
+    dataset = PETADataLoader(listfile='/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/train_list_v2.txt', transform=transform)
     data_loader = data.DataLoader(dataset, BATCH_SIZE, num_workers=args.num_worker, shuffle=True)
 
     #print (dataset.get_classNum())
@@ -181,8 +181,6 @@ def train():
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.max_epoch)
 
     net_.train()
-
-    
 
     # loss counters
     total_loss = 0
@@ -262,9 +260,8 @@ def train():
             print('iter ' + repr(iteration) + '||epoch:' + repr(epoch) + ' || Loss: %.4f ||' % (loss_.item()), end=' ')
             writer.add_scalar('data/total_loss_iter', loss_.item(), iteration)
 
-
         ###  save
-        if iteration != 0 and iteration % 5000 == 0:
+        if iteration != 0 and iteration % 1000 == 0:
             print('Saving state, iter:', iteration)
             torch.save(net_.state_dict(), os.path.join(save_dir, 'models', modelName + '_iter-' + repr(iteration) + '.pth'))
     torch.save(net_.state_dict(), os.path.join(save_dir, 'models', modelName + '_iter-' + repr(iteration) + '.pth'))

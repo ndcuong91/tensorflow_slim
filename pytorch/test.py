@@ -120,7 +120,50 @@ class PETADataLoader(torch.utils.data.Dataset):
     
     def get_classNum(self):
         return len(self.dataList[0])
-       
+
+def calculate_mAP(y_pred, y_true, num_class=31):
+    average_precisions = []
+
+    for index in range(num_class):
+        pred = y_pred[:, index]
+        label = y_true[:, index]
+
+        sorted_indices = np.argsort(-pred)
+        sorted_label = label[sorted_indices]
+
+        tp = (sorted_label == 1)
+        fp = (sorted_label == 0)
+
+        fp = np.cumsum(fp)
+        tp = np.cumsum(tp)
+
+        npos = np.sum(sorted_label)
+        recall = tp * 1.0 / npos
+
+        # avoid divide by zero in case the first detection matches a difficult
+        # ground truth
+        precision = tp * 1.0 / np.maximum((tp + fp), np.finfo(np.float64).eps)
+
+        mrec = np.concatenate(([0.], recall, [1.]))
+        mpre = np.concatenate(([0.], precision, [0.]))
+
+        # compute the precision envelope
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+        # to calculate area under PR curve, look for points
+        # where X axis (recall) changes value
+        i = np.where(mrec[1:] != mrec[:-1])[0]
+
+        # and sum (\Delta recall) * prec
+        AP=np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+        print('Class ', index, ':', round(AP,3) )
+        average_precisions.append(np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1]))
+
+    #print(average_precisions)
+    mAP = np.mean(average_precisions)
+
+    return mAP
 
 
 def test_resnet34(pretrained_model, num_class = 74, total_samples = 1376):
@@ -215,7 +258,7 @@ def test_resnet50(pretrained_model, num_class = 31, total_samples = 1376):
             normalize,
             ])
 
-    dataset = PETADataLoader(listfile='scripts/PETA/val_list_v2.txt', transform=transform)
+    dataset = PETADataLoader(listfile='/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/val_list_v2.txt', transform=transform)
     data_loader = data.DataLoader(dataset, 1, num_workers=1, shuffle=True)
 
 ### Build Model
@@ -238,6 +281,10 @@ def test_resnet50(pretrained_model, num_class = 31, total_samples = 1376):
     for i in range(num_class):
         true_preds.append(0)
 
+
+    prediction_arr=[]
+    label_arr=[]
+
     for iteration in range( 0, total_samples):
         if(iteration%100==0 and iteration>0):
             print ('Predict:',iteration,'images')
@@ -258,9 +305,10 @@ def test_resnet50(pretrained_model, num_class = 31, total_samples = 1376):
         # forward
         t0 = time.time()
         out = net_(images)
-        #out = F.sigmoid(out)
         out = torch.sigmoid(out)
 
+        prediction_arr.append(out.cpu().detach().numpy()[0])
+        label_arr.append(targets.cpu().numpy()[0])
 
         for i, tval in enumerate(targets[0]):
             true_val=tval.item()
@@ -278,14 +326,18 @@ def test_resnet50(pretrained_model, num_class = 31, total_samples = 1376):
 
         cv2.waitKey(100)
 
+
+    result = calculate_mAP(np.asarray(prediction_arr), np.asarray(label_arr))
+    print('mAP score: {}'.format(result))
+
     accum_acc=0
     for i in range(num_class):
         acc = float(true_preds[i]) / float(total_samples)
         accum_acc+=acc
-        print('Class ', i, ':', acc)
+        print('Class ', i, ':', round(acc,3))
     print('Final acc:',accum_acc/float(num_class))
 
 
 if __name__ == '__main__':
     #test_resnet34('save_dir/deepMAR_0513/run_20190821140616/models/deepMAR_0513_iter-93526.pth')
-    test_resnet50('save_dir/deepMAR_0517/run_20190828160054/models/deepMAR_0517_iter-926926.pth')
+    test_resnet50('save_dir/deepMAR_0517/run_20190828160054/deepMAR_0517_iter-926926.pth')
