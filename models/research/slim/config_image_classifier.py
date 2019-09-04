@@ -30,14 +30,14 @@ checkpoint_exclude= 'resnet_v1_50/logits,resnet_v1_50/AuxLogits'# 'resnet_v1_50/
 trainable_scopes='' #'InceptionV3/Logits,InceptionV3/AuxLogits' #'MobilenetV1/Logits'
 
 #02.evaluate
-cpu=False
+cpu=True
 #cpu=True
 checkpoint_eval_path='../../../models/downloaded/resnet50_v1'  #can be directory or specific checkpoint
 log_dir=os.path.dirname(checkpoint_eval_path)
 
 #03.export inference graph
-type='qt'
-checkpoint_path ='../../../models/downloaded/resnet50_v1/model.ckpt-8561'
+type='add_bn_test'
+checkpoint_path ='../../../models/downloaded/resnet50_v1/model.ckpt-747'
 output_graph = os.path.join('../../../outputs/tflite', model_name+'_'+str(input_size)+ '_'+dataset_name+ '_'+type +'_graph.pb')
 output_file = os.path.join('../../../outputs/tflite', model_name+'_'+str(input_size)+ '_'+dataset_name+ '_'+type +'_frozen.pb')
 

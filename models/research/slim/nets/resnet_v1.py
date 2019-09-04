@@ -135,12 +135,16 @@ def bottleneck(inputs,
     if use_bounded_activations:
       # Use clip_by_value to simulate bandpass activation.
       residual = tf.clip_by_value(residual, -6.0, 6.0)
-      #output = slim.batch_norm(shortcut + residual)
       output = tf.nn.relu6(shortcut + residual)
+
+      #output = tf.layers.batch_normalization(shortcut + residual, fused=True)
+      #output = tf.nn.relu6(output)
       #print('DatTV. Add batchnorm before act') #datnv
     else:
-      #output = slim.batch_norm(shortcut + residual)
       output = tf.nn.relu6(shortcut + residual)
+
+      #output = tf.layers.batch_normalization(shortcut + residual, fused=True)
+      #output = tf.nn.relu6(output)
       #print('DatTV. Add batchnorm before act') #datnv
 
     return slim.utils.collect_named_outputs(outputs_collections,

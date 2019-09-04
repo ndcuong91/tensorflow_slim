@@ -177,7 +177,7 @@ def train():
         cudnn.benchmark = True
 
     optimizer = optim.SGD(net_.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-    criterion = F.binary_cross_entropy_with_logits
+    criterion = F.binary_cross_entropy_with_logits #https://discuss.pytorch.org/t/bceloss-vs-bcewithlogitsloss/33586/8
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.max_epoch)
 
     net_.train()
@@ -219,7 +219,6 @@ def train():
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = lrr
                     
-
 
         if iter_counter >= len(batch_iterator):
             batch_iterator = iter(data_loader)

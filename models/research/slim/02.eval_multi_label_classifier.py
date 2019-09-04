@@ -1,226 +1,208 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-"""Generic evaluation script that evaluates a model using a given dataset."""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math, os
 import tensorflow as tf
-
+import numpy as np
+import math
 from datasets import dataset_factory
-from nets import nets_factory
 from preprocessing import preprocessing_factory
+from nets import nets_factory
+
 import config_image_classifier as config
 
 slim = tf.contrib.slim
 
-checkpoint_path = config.checkpoint_eval_path
-log_dir=config.log_dir
+image_size = config.input_size
 dataset_name=config.dataset_name
 dataset_dir=config.dataset_dir
 dataset_split='test'
+checkpoint_path=config.checkpoint_eval_path
 model_name=config.model_name
-input_size=config.input_size
-batch_size=config.batch_size
-num_thread=config.num_thread
 quant_delay=config.quant_delay
-quantize=False
-if(quant_delay>-1):
-    quantize=True
+output_dir=config.output_dir
+num_thread=config.num_thread
 
-
+tf.flags.DEFINE_integer('batch_size', 32, 'Batch size')
+tf.app.flags.DEFINE_string('model_name', model_name, 'The name of the architecture to test.')
+tf.flags.DEFINE_string('dataset_dir', dataset_dir,'The directory where the dataset files are stored')
+tf.flags.DEFINE_string('checkpoint_path', checkpoint_path,'The directory where the pretrained model is stored')
+tf.app.flags.DEFINE_string('dataset_name', dataset_name, 'The name of the dataset to load.')
+tf.app.flags.DEFINE_string('dataset_split_name', dataset_split, 'The name of the train/test split.')
 tf.app.flags.DEFINE_integer(
-    'batch_size', batch_size, 'The number of samples in each batch.')
-
-tf.app.flags.DEFINE_integer(
-    'max_num_batches', None,
-    'Max number of batches to evaluate by default use all.')
-
-tf.app.flags.DEFINE_string(
-    'master', '', 'The address of the TensorFlow master to use.')
-
-tf.app.flags.DEFINE_string(
-    'checkpoint_path', checkpoint_path,
-    'The directory where the model was written to or an absolute path to a '
-    'checkpoint file.')
-
-tf.app.flags.DEFINE_string(
-    'log_dir', log_dir, 'Directory where the results are saved to.')
-
+    'num_readers', num_thread,
+    'The number of parallel readers that read data from the dataset.')
 tf.app.flags.DEFINE_integer(
     'num_preprocessing_threads', num_thread,
     'The number of threads used to create the batches.')
 
-tf.app.flags.DEFINE_string(
-    'dataset_name', dataset_name, 'The name of the dataset to load.')
-
-tf.app.flags.DEFINE_string(
-    'dataset_split_name', dataset_split, 'The name of the train/test split.')
-
-tf.app.flags.DEFINE_string(
-    'dataset_dir', dataset_dir, 'The directory where the dataset files are stored.')
-
-tf.app.flags.DEFINE_integer(
-    'labels_offset', 0,
-    'An offset for the labels in the dataset. This flag is primarily used to '
-    'evaluate the VGG and ResNet architectures which do not use a background '
-    'class for the ImageNet dataset.')
-
-tf.app.flags.DEFINE_string(
-    'model_name', model_name, 'The name of the architecture to evaluate.')
-
-tf.app.flags.DEFINE_string(
-    'preprocessing_name', None, 'The name of the preprocessing to use. If left '
-    'as `None`, then the model_name flag is used.')
-
-tf.app.flags.DEFINE_float(
-    'moving_average_decay', None,
-    'The decay to use for the moving average.'
-    'If left as None, then moving averages are not used.')
-
-tf.app.flags.DEFINE_integer(
-    'eval_image_size', input_size, 'Eval image size')
-
-tf.app.flags.DEFINE_bool(
-    'quantize', quantize, 'whether to use quantized graph or not.')
-
 FLAGS = tf.app.flags.FLAGS
+
+def cal_mAP(y_pred, y_true, num_samples=1376, num_class=31):
+    true_preds = []
+    for i in range(num_class):
+        true_preds.append(0)
+
+    for i in range(num_samples):
+        for j in range(31):
+            true_val=y_true[i][j]
+            pred_val=y_pred[i][j]
+
+            if(pred_val<0.5):
+                pred_val=0
+            elif(pred_val>0.5):
+                pred_val=1
+            else:
+                true_preds[j]+=1
+                continue
+            if(pred_val==int(true_val)):
+                true_preds[j]+=1
+    accum_acc = 0
+    for i in range(num_class):
+        acc = float(true_preds[i]) / float(num_samples)
+        accum_acc += acc
+        print('Class ', i, ':', round(acc,3))
+    #print('Final acc:', accum_acc / float(num_class))
+    return accum_acc / float(num_class)
+
+# reference: https://github.com/broadinstitute/keras-rcnn/issues/6
+def calculate_mAP(y_pred, y_true, num_class=31):
+    num_classes = y_true.shape[1]
+    average_precisions = []
+
+    for index in range(num_class):
+        pred = y_pred[:, index]
+        label = y_true[:, index]
+
+        sorted_indices = np.argsort(-pred)
+        sorted_pred = pred[sorted_indices]
+        sorted_label = label[sorted_indices]
+
+        tp = (sorted_label == 1)
+        fp = (sorted_label == 0)
+
+        fp = np.cumsum(fp)
+        tp = np.cumsum(tp)
+
+        npos = np.sum(sorted_label)
+        recall = tp * 1.0 / npos
+
+        # avoid divide by zero in case the first detection matches a difficult
+        # ground truth
+        precision = tp * 1.0 / np.maximum((tp + fp), np.finfo(np.float64).eps)
+
+        mrec = np.concatenate(([0.], recall, [1.]))
+        mpre = np.concatenate(([0.], precision, [0.]))
+
+        # compute the precision envelope
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+        # to calculate area under PR curve, look for points
+        # where X axis (recall) changes value
+        i = np.where(mrec[1:] != mrec[:-1])[0]
+
+        # and sum (\Delta recall) * prec
+        AP = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+        print('Class ', index, ':', round(AP, 3))
+        average_precisions.append(np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1]))
+
+    #print(average_precisions)
+    mAP = np.mean(average_precisions)
+
+    return mAP
 
 
 def main(_):
-  if not FLAGS.dataset_dir:
-    raise ValueError('You must supply the dataset directory with --dataset_dir')
+    with tf.Graph().as_default():
+        tf.logging.set_verbosity(tf.logging.INFO)
 
-  tf.logging.set_verbosity(tf.logging.ERROR)  # or any {DEBUG, INFO, WARN, ERROR, FATAL}
-  with tf.Graph().as_default():
-    tf_global_step = slim.get_or_create_global_step()
+        # Select the dataset
+        dataset = dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+        data_provider = slim.dataset_data_provider.DatasetDataProvider(
+            dataset,
+            num_readers=FLAGS.num_readers,
+            common_queue_capacity=20 * FLAGS.batch_size,
+            common_queue_min=10 * FLAGS.batch_size,
+            shuffle=False)
 
-    # Select the dataset #
-    dataset = dataset_factory.get_dataset(
-        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+        image, label = data_provider.get(['image', 'label'])
 
-    # Select the model #
-    network_fn = nets_factory.get_network_fn(
-        FLAGS.model_name,
-        num_classes=(dataset.num_classes - FLAGS.labels_offset),
-        is_training=False)
+        label = tf.decode_raw(label, tf.float32)
+        label = tf.reshape(label, [dataset.num_classes])
 
-    # Create a dataset provider that loads data from the dataset #
-    provider = slim.dataset_data_provider.DatasetDataProvider(
-        dataset,
-        shuffle=False,
-        common_queue_capacity=2 * FLAGS.batch_size,
-        common_queue_min=FLAGS.batch_size)
-    [image, label] = provider.get(['image', 'label'])
-    label -= FLAGS.labels_offset
+        # Preprocess images
+        preprocessing_name = 'deepmar'
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(preprocessing_name, is_training=False)
+        image = image_preprocessing_fn(image, image_size, image_size)
 
-    # Select the preprocessing function #
-    preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
-    image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-        preprocessing_name,
-        is_training=False)
+        # Training bathes and queue
+        images, labels = tf.train.batch(
+            [image, label],
+            batch_size=FLAGS.batch_size,
+            num_threads=FLAGS.num_preprocessing_threads,
+            capacity=5 * FLAGS.batch_size,
+            allow_smaller_final_batch=True)
 
-    eval_image_size = FLAGS.eval_image_size or network_fn.default_image_size
+        # Create the model
+        network_fn = nets_factory.get_network_fn(
+            FLAGS.model_name,
+            num_classes=dataset.num_classes,
+            is_training=False)
 
-    image = image_preprocessing_fn(image, eval_image_size, eval_image_size)
+        logits, _ = network_fn(images)
 
-    images, labels = tf.train.batch(
-        [image, label],
-        batch_size=FLAGS.batch_size,
-        num_threads=FLAGS.num_preprocessing_threads,
-        capacity=5 * FLAGS.batch_size)
+        predictions = tf.nn.sigmoid(logits, name='prediction')
 
-    # Define the model #
-    logits, _ = network_fn(images)
+        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels)
+        loss = tf.reduce_mean(cross_entropy)
 
-    if FLAGS.quantize:
-      tf.contrib.quantize.create_eval_graph()
+        correct_prediction = tf.equal(tf.round(predictions), labels)
 
-    if FLAGS.moving_average_decay:
-      variable_averages = tf.train.ExponentialMovingAverage(
-          FLAGS.moving_average_decay, tf_global_step)
-      variables_to_restore = variable_averages.variables_to_restore(
-          slim.get_model_variables())
-      variables_to_restore[tf_global_step.op.name] = tf_global_step
-    else:
-      variables_to_restore = slim.get_variables_to_restore()
+        # Mean accuracy over all labels:
+        # http://stackoverflow.com/questions/37746670/tensorflow-multi-label-accuracy-calculation
+        accuracy = tf.cast(correct_prediction, tf.float32)
+        mean_accuracy = tf.reduce_mean(accuracy)
 
-    predictions = tf.argmax(logits, 1)
-    labels = tf.squeeze(labels)
+        checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
+        init_fn = slim.assign_from_checkpoint_fn(
+            checkpoint_path,
+            slim.get_variables_to_restore())
 
-    # Define the metrics:
-    names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
-        'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
-        'Recall_5': slim.metrics.streaming_recall_at_k(
-            logits, labels, 5),
-    })
+        num_samples=data_provider.num_samples()
+        num_batches = math.ceil(num_samples / float(FLAGS.batch_size))
 
-    # Print the summaries to screen.
-    for name, value in names_to_values.items():
-      summary_name = 'eval/%s' % name
-      op = tf.summary.scalar(summary_name, value, collections=[])
-      op = tf.Print(op, [value], summary_name)
-      tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+        prediction_list = []
+        label_list = []
+        count = 0
 
-    # TODO(sguada) use num_epochs=1
-    if FLAGS.max_num_batches:
-      num_batches = FLAGS.max_num_batches
-    else:
-      # This ensures that we make a single pass over all of the data.
-      num_batches = math.ceil(dataset.num_samples / float(FLAGS.batch_size))
+        conf=None
+        if (config.cpu):
+            conf = tf.ConfigProto(device_count={'GPU': 0})  #
+        with tf.Session(config=conf) as sess:
+            with slim.queues.QueueRunners(sess):
+                sess.run(tf.local_variables_initializer())
+                init_fn(sess)
 
-    if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
-      checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
-    else:
-      checkpoint_path = FLAGS.checkpoint_path
+                for step in range(int(num_batches)):
+                    np_loss, np_accuracy, np_logits, np_prediction, np_labels = sess.run(
+                        [loss, mean_accuracy, logits, predictions, labels])
 
-    tf.logging.set_verbosity(tf.logging.INFO)
-    tf.logging.info('Evaluating %s' % checkpoint_path)
+                    prediction_list.append(np_prediction)
+                    label_list.append(np_labels)
 
-    if(config.cpu):
-        conf = tf.ConfigProto(device_count={'GPU': 0})  #
-        slim.evaluation.evaluate_once(
-            master=FLAGS.master,
-            checkpoint_path=checkpoint_path,
-            logdir=FLAGS.log_dir,
-            num_evals=num_batches,
-            eval_op=list(names_to_updates.values()),
-            variables_to_restore=variables_to_restore,
-            session_config=conf)
-    else:
-        slim.evaluation.evaluate_once(
-            master=FLAGS.master,
-            checkpoint_path=checkpoint_path,
-            logdir=FLAGS.log_dir,
-            num_evals=num_batches,
-            eval_op=list(names_to_updates.values()),
-            variables_to_restore=variables_to_restore)
+                    count += np_labels.shape[0]
 
-    # eval_interval_secs = config.save_ckpt_every_seconds  # How often to run the evaluation.
-    # slim.evaluation.evaluation_loop(
-    #     'local',
-    #     checkpoint_dir=checkpoint_path,
-    #     logdir=FLAGS.eval_dir,
-    #     num_evals=num_batches,
-    #     eval_op=list(names_to_updates.values()),
-    #     variables_to_restore=variables_to_restore,
-    #     session_config=conf,
-    #     eval_interval_secs=eval_interval_secs)
+                    print('Step {}, count {}, loss: {}'.format(step, count, np_loss))
+
+        prediction_arr = np.concatenate(prediction_list, axis=0)
+        label_arr = np.concatenate(label_list, axis=0)
+
+        result = cal_mAP(prediction_arr, label_arr, num_samples=num_samples, num_class=dataset.num_classes)
+        print('mAP score: {}'.format(result))
+        result = calculate_mAP(prediction_arr, label_arr)
+        print('mAP score: {}'.format(result))
 
 
 if __name__ == '__main__':
-  tf.app.run()
+    tf.app.run()

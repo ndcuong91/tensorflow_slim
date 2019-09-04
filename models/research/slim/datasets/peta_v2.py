@@ -17,7 +17,7 @@ _ITEMS_TO_DESCRIPTIONS = {
     'adj': 'A list of one, one per each label',
 }
 
-_LABELS_FILENAME = '/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/tfrecord/label_map.txt'
+_LABELS_FILENAME = '/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/pytorch/data/PETA_tfrecord/label_map.txt'
 
 def read_label_file(label_file_path):
     with tf.gfile.Open(label_file_path, 'rb') as f:
