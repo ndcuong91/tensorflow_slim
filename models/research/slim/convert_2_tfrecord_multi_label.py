@@ -73,10 +73,10 @@ import threading
 import numpy as np
 import tensorflow as tf
 
-output_dir='/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/tfrecord'
+output_dir='/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/outputs/test'
 num_class=31
 
-data_dir = '/home/duycuong/PycharmProjects/research_py3/tensorflow_slim/data/PETA/tfrecord'
+data_dir = '/home/atsg/PycharmProjects/gvh205_py3/tensorflow_slim/pytorch/data/PETA_tfrecord'
 label_map_path = os.path.join(data_dir, 'label_map.txt')
 label_train_path = os.path.join(data_dir, 'label_train.txt')
 label_test_path = os.path.join(data_dir, 'label_test.txt')

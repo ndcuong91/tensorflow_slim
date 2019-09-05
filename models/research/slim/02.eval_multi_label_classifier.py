@@ -38,7 +38,8 @@ tf.app.flags.DEFINE_integer(
 
 FLAGS = tf.app.flags.FLAGS
 
-def cal_mAP(y_pred, y_true, num_samples=1376, num_class=31):
+def cal_meanAccuracy(y_pred, y_true, num_samples=1376, num_class=31):
+    print('Begin calculate mean Accuracy..........')
     true_preds = []
     for i in range(num_class):
         true_preds.append(0)
@@ -67,7 +68,7 @@ def cal_mAP(y_pred, y_true, num_samples=1376, num_class=31):
 
 # reference: https://github.com/broadinstitute/keras-rcnn/issues/6
 def calculate_mAP(y_pred, y_true, num_class=31):
-    num_classes = y_true.shape[1]
+    print('Begin calculate mAP..........')
     average_precisions = []
 
     for index in range(num_class):
@@ -115,7 +116,7 @@ def calculate_mAP(y_pred, y_true, num_class=31):
 
 def main(_):
     with tf.Graph().as_default():
-        tf.logging.set_verbosity(tf.logging.INFO)
+        tf.logging.set_verbosity(tf.logging.ERROR)
 
         # Select the dataset
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
@@ -165,6 +166,7 @@ def main(_):
         mean_accuracy = tf.reduce_mean(accuracy)
 
         checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
+        print ('Evaluate model from checkpoint:',checkpoint_path)
         init_fn = slim.assign_from_checkpoint_fn(
             checkpoint_path,
             slim.get_variables_to_restore())
@@ -193,15 +195,17 @@ def main(_):
 
                     count += np_labels.shape[0]
 
-                    print('Step {}, count {}, loss: {}'.format(step, count, np_loss))
+                    #print('Step {}, count {}, loss: {}'.format(step, count, np_loss))
 
         prediction_arr = np.concatenate(prediction_list, axis=0)
         label_arr = np.concatenate(label_list, axis=0)
 
-        result = cal_mAP(prediction_arr, label_arr, num_samples=num_samples, num_class=dataset.num_classes)
-        print('mAP score: {}'.format(result))
+        tf.logging.set_verbosity(tf.logging.INFO)
+
+        result = cal_meanAccuracy(prediction_arr, label_arr, num_samples=num_samples, num_class=dataset.num_classes)
+        print('mean Accuracy: {}'.format(result))
         result = calculate_mAP(prediction_arr, label_arr)
-        print('mAP score: {}'.format(result))
+        print('mAP: {}'.format(result))
 
 
 if __name__ == '__main__':

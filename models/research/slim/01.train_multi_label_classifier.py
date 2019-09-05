@@ -27,20 +27,19 @@ log_every_n_steps=config.log_every_n_steps
 trainable_scopes=config.trainable_scopes
 num_thread=config.num_thread
 batch_size=config.batch_size
+num_epoch=config.num_epoch
+lr=config.lr
 
 
 tf.app.flags.DEFINE_string(
     'model_name', model_name, 'The name of the architecture to train.')
 tf.flags.DEFINE_integer('batch_size', batch_size, 'Batch size')
-tf.flags.DEFINE_integer('epochs', 50, 'Number of training epochs')
-tf.flags.DEFINE_float('learning_rate', 1e-3, 'Initial learning rate')
-
+tf.flags.DEFINE_integer('epochs', num_epoch, 'Number of training epochs')
+tf.flags.DEFINE_float('learning_rate', lr, 'Initial learning rate')
 tf.flags.DEFINE_string('dataset_dir', dataset_dir,
                        'The directory where the dataset files are stored')
 tf.flags.DEFINE_string('checkpoint_path', checkpoint_path,
                        'The directory where the pretrained model is stored')
-tf.flags.DEFINE_integer('num_classes', 31,
-                        'Number of classes')
 tf.app.flags.DEFINE_string(
     'dataset_name', dataset_name, 'The name of the dataset to load.')
 tf.app.flags.DEFINE_string(
@@ -125,7 +124,7 @@ def logging(dir):
 def main(_):
 
     with tf.Graph().as_default():
-        tf.logging.set_verbosity(tf.logging.DEBUG)
+        tf.logging.set_verbosity(tf.logging.ERROR)
 
         # Select the dataset
         dataset = dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
@@ -139,7 +138,7 @@ def main(_):
 
         label = tf.decode_raw(label, tf.float32)
 
-        label = tf.reshape(label, [FLAGS.num_classes])
+        label = tf.reshape(label, [dataset.num_classes])
 
         # Preprocess images
         preprocessing_name = 'deepmar'
@@ -184,8 +183,8 @@ def main(_):
         # Variables to train.
         variables_to_train = _get_variables_to_train()
 
-        #optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
-        optimizer = tf.train.cosine_decay(learning_rate=FLAGS.learning_rate, decay_steps = 1000)
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        #optimizer = tf.train.cosine_decay(learning_rate=FLAGS.learning_rate, decay_steps = 1000)
 
         train_op = slim.learning.create_train_op(loss, optimizer, variables_to_train=variables_to_train)
 

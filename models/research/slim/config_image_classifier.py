@@ -16,6 +16,7 @@ save_ckpt_every_seconds=300
 log_every_n_steps=100
 maximum_steps=600000
 ignore_missing=True
+num_epoch=50
 lr=0.0001
 end_lr=0.0001
 lr_decay_factor=0.94
@@ -36,7 +37,7 @@ checkpoint_eval_path='../../../models/downloaded/resnet50_v1'  #can be directory
 log_dir=os.path.dirname(checkpoint_eval_path)
 
 #03.export inference graph
-type='add_bn_test'
+type=''
 checkpoint_path ='../../../models/downloaded/resnet50_v1/model.ckpt-747'
 output_graph = os.path.join('../../../outputs/tflite', model_name+'_'+str(input_size)+ '_'+dataset_name+ '_'+type +'_graph.pb')
 output_file = os.path.join('../../../outputs/tflite', model_name+'_'+str(input_size)+ '_'+dataset_name+ '_'+type +'_frozen.pb')
