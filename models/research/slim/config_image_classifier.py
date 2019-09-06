@@ -1,4 +1,6 @@
 import os
+from termcolor import colored
+print(colored('Hello, World!', 'green'))
 
 output_dir='../../../outputs'
 dataset_name='peta_v2'
@@ -11,7 +13,7 @@ model_name='resnet_v1_50' #inception_v3  #mobilenet_v1 #resnet_v1_50
 num_thread=4
 input_size=224
 batch_size=16
-quant_delay=10
+quant_delay=-1
 save_ckpt_every_seconds=300
 log_every_n_steps=100
 maximum_steps=600000
@@ -37,8 +39,8 @@ checkpoint_eval_path='../../../models/downloaded/resnet50_v1'  #can be directory
 log_dir=os.path.dirname(checkpoint_eval_path)
 
 #03.export inference graph
-type=''
-checkpoint_path ='../../../models/downloaded/resnet50_v1/model.ckpt-747'
+type='non_qt'
+checkpoint_path ='../../../models/downloaded/resnet50_v1/model.ckpt-21982'
 output_graph = os.path.join('../../../outputs/tflite', model_name+'_'+str(input_size)+ '_'+dataset_name+ '_'+type +'_graph.pb')
 output_file = os.path.join('../../../outputs/tflite', model_name+'_'+str(input_size)+ '_'+dataset_name+ '_'+type +'_frozen.pb')
 

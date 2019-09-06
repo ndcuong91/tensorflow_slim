@@ -12,6 +12,8 @@ from preprocessing import preprocessing_factory
 from nets import nets_factory
 
 import config_image_classifier as config
+from termcolor import colored
+print(colored('Hello, World!', 'green', 'on_red'))
 
 slim = tf.contrib.slim
 
@@ -96,8 +98,8 @@ def _get_variables_to_train():
     print('Train all variables!')
     return tf.trainable_variables()
   else:
-    print('Train some variables!')
     scopes = [scope.strip() for scope in FLAGS.trainable_scopes.split(',')]
+    print('Train some variables!',scopes)
 
   variables_to_train = []
   for scope in scopes:
@@ -165,8 +167,10 @@ def main(_):
 
         if FLAGS.quantize_delay >= 0:
             print('Train with quantization-aware training')
-            tf.contrib.quantize.create_training_graph(
-                quant_delay=0)
+            tf.contrib.quantize.create_training_graph(quant_delay=FLAGS.quantize_delay)
+        else:
+            print('Train with no quantization')
+
 
         # Gather initial summaries.
         summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))

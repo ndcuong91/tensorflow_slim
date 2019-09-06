@@ -4,9 +4,13 @@ import tensorflow as tf
 import config_image_classifier as config
 
 input_file=config.output_file
-input_node=config.input_node
-output_node=config.output_node
+input_node=[config.input_node]
+output_node=[config.output_node]
 output_tffile=config.output_tflite
+
+input_file='../../../outputs/tflite/test.pb'
+output_node=['model/classifier_block/dense_1/MatMul']
+output_tffile='../../../outputs/tflite/test.tflite'
 
 def print_all_nodes():
     gf = tf.GraphDef()
@@ -16,14 +20,14 @@ def print_all_nodes():
         print(n.name)
 
 def convert():
-    converter = tflite.TFLiteConverter.from_frozen_graph(input_file, [input_node], [output_node])
+    converter = tflite.TFLiteConverter.from_frozen_graph(input_file, input_node, output_node)
 
     # converter.output_file = "./tflite_model.tflite"
-    converter.inference_type = tflite.constants.QUANTIZED_UINT8
-    converter.inference_input_type = tflite.constants.QUANTIZED_UINT8
-    converter.quantized_input_stats = {input_node: (0.0, 255.0)}
+    #converter.inference_type = tflite.constants.QUANTIZED_UINT8
+    #converter.inference_input_type = tflite.constants.QUANTIZED_UINT8
+    #converter.quantized_input_stats = {input_node: (0.0, 255.0)}
     # converter.default_ranges_stats = (0, 6)
-    # converter.inference_output_type = tf.float32
+    converter.inference_output_type = tf.float32
 
     converter.dump_graphviz_dir = './'
 

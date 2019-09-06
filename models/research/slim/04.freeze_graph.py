@@ -152,7 +152,10 @@ def freeze_graph_with_def_protos(input_graph_def,
 
   if input_graph_def:
     _ = importer.import_graph_def(input_graph_def, name="")
-  with session.Session() as sess:
+
+  #CuongND. run on CPU
+  conf = tf.ConfigProto(device_count={'GPU': 0})
+  with session.Session(config=conf) as sess:
     if input_saver_def:
       saver = saver_lib.Saver(
           saver_def=input_saver_def, write_version=checkpoint_version)
